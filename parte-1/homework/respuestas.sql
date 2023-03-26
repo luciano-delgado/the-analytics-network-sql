@@ -111,7 +111,7 @@ sum(venta) as monto
 from stg.order_line_sale
 group by tienda,moneda 
 order by monto desc
---13
+--13 -- VER
 select producto, moneda, 
 avg(venta)
 from stg.order_line_sale
