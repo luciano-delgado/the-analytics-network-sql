@@ -122,6 +122,15 @@ select orden, sum(impuestos)/sum(venta) as tasa
 from stg.order_line_sale
 group by orden
 
+--CLASE 3
+--1
+select 
+codigo_producto, 
+nombre,
+case when color is null then 'Unknown' else color end as color2
+from stg.product_master
+where nombre like ('%PHILIPS%') 
+or nombre like ('%Samsung%') 
 
 
 
