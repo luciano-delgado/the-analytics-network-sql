@@ -216,12 +216,11 @@ left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extra
 --10) Mostrar en la tabla de ventas el margen de venta por cada linea. Siendo margen = (venta - promociones) - costo expresado en dolares.
 select 
 ols.*,
-round(ols.venta+coalesce(ols.descuento,0)+coalesce(ols.creditos,0),2) as mg_moneda_local,
-round((ols.venta+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
+(round((ols.venta+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
 	when moneda = 'EUR' then mfx.cotizacion_usd_eur
 	when moneda = 'ARS' then mfx.cotizacion_usd_peso
 	when moneda = 'URU' then mfx.cotizacion_usd_uru
-	else 0 end),1) as mg_dolarizado
+	else 0 end),1))-c1.costo_promedio_usd as mg_dolarizado
 from stg.order_line_sale ols 
 left join stg.cost c1 on c1.codigo_producto = ols.producto
 left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
@@ -295,6 +294,31 @@ FROM stg.cost
 Por lo que pude investigar se puede:
 - ROLLBACK;
 - INSERT INTO de los valores eliminados
+
+-- PROYECTO INTEGRADOR -- :
+|Ventas brutas, netas y margen|
+select 
+extract(month from ols.fecha) as mes,
+sum(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as venta_bruta_mes_dolarizada,
+sum(round((ols.venta-ols.impuestos+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as venta_neta_mes_dolarizada,
+sum((round((ols.venta+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1))-c1.costo_promedio_usd) as mg_dolarizado
+from stg.order_line_sale ols 
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
+left join stg.cost c1 on c1.codigo_producto = ols.producto
+group by extract(month from ols.fecha)
+order by 1
 
 
 
