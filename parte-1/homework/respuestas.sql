@@ -235,9 +235,62 @@ group by ols.orden
 order by 1
 
 --CLASE 4
-
-
-
+--1) Crear un backup de la tabla product_master. Utilizar un esquema llamada "bkp" y agregar un prefijo al nombre de la tabla con la fecha del backup en forma de numero entero.
+SELECT *,
+current_date as bkp_date -- Le agrego fecha bkp
+INTO bkp.product_master_20230402
+FROM stg.product_master
+--2) Hacer un update a la nueva tabla (creada en el punto anterior) de product_master agregando la leyendo "N/A" para los valores null de material y color. Pueden utilizarse dos sentencias.
+update bkp.product_master_20230402 
+set color = 'N/A'
+where color is null
+set material = 'N/A'
+where material is null
+--3) Hacer un update a la tabla del punto anterior, actualizando la columa "is_active", desactivando todos los productos en la subsubcategoria "Control Remoto"
+update bkp.product_master_20230402 
+set is_Active = 'false'
+where subsubcategoria = 'Control remoto'
+--4) Agregar una nueva columna a la tabla anterior llamada "is_local" indicando los productos producidos en Argentina y fuera de Argentina.
+alter table bkp.product_master_20230402 	
+add column is_local boolean;
+update bkp.product_master_20230402 	
+set is_local = false 
+where origen != 'Argentina';
+update bkp.product_master_20230402 	
+set is_local = true 
+where origen = 'Argentina';
+--5) Agregar una nueva columna a la tabla de ventas llamada "line_key" que resulte ser la concatenacion de el numero de orden y el codigo de producto.
+alter table stg.order_line_sale 	
+add column line_key varchar;
+update stg.order_line_sale
+set line_key = concat(orden,producto)
+--6) Eliminar todos los valores de la tabla "order_line_sale" para el POS 1.
+delete from stg.order_line_sale
+where pos = 1
+--7) Crear una tabla llamada "employees" (por el momento vacia) que tenga un id (creado de forma incremental), nombre, apellido, fecha de entrada, fecha salida, telefono, pais, provincia, codigo_tienda, posicion. Decidir cual es el tipo de dato mas acorde
+CREATE TABLE stg.employees (
+    id serial PRIMARY KEY,
+    nombre varchar(255),
+    apellido varchar(255),
+    fecha_entrada date,
+    fecha_salida date,
+    telefono varchar(255),
+    pais varchar(255),
+    provincia varchar(255),
+    codigo_tienda varchar(255),
+    posicion varchar(255)
+)
+--8) Crear una tabla llamada "employees" (por el momento vacia) que tenga un id (creado de forma incremental), nombre, apellido, fecha de entrada, fecha salida, telefono, pais, provincia, codigo_tienda, posicion. Decidir cual es el tipo de dato mas acorde
+insert into stg.employees (nombre,apellido,fecha_entrada,fecha_salida,telefono,pais,provincia,codigo_tienda,posicion)
+values ('Catalina','Garcia','2022-03-01',null,null,'Argentina','Buenos Aires','tienda 2','Representante Comercial'),
+ ('Ana','Valdez','2022-02-21','2022-03-01',null,'España','Madrid','tienda 8','Jefe Logistica'),
+ ('Fernando','Moralez','2022-04-04',null,null,'España','Valencia','tienda 9','Vendedor'),
+ ('Juan','Perez','2022-01-01',null,'+541113869867','Argentina','Santa Fe','tienda 2','Vendedor')
+--9)Crear un backup de la tabla "cost" agregandole una columna que se llame "last_updated_ts" que sea el momento exacto en el cual estemos realizando el backup en formato datetime.
+select *,
+now() as ldast_updated_ts 
+INTO bkp.cost_bkp_20230402
+FROM stg.cost
 
 
 
