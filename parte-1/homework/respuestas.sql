@@ -291,6 +291,10 @@ select *,
 now() as ldast_updated_ts 
 INTO bkp.cost_bkp_20230402
 FROM stg.cost
+--9) El cambio del punto 6 fue un error. ¿Cómo lo desharías?
+Por lo que pude investigar se puede:
+- ROLLBACK;
+- INSERT INTO de los valores eliminados
 
 
 
