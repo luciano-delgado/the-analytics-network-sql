@@ -296,7 +296,7 @@ Por lo que pude investigar se puede:
 - INSERT INTO de los valores eliminados
 
 -- PROYECTO INTEGRADOR -- :
-|Ventas brutas, netas y margen|
+-- |Ventas brutas, netas y margen|
 select 
 extract(month from ols.fecha) as mes,
 sum(round(ols.venta/(case 
@@ -319,8 +319,52 @@ left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extra
 left join stg.cost c1 on c1.codigo_producto = ols.producto
 group by extract(month from ols.fecha)
 order by 1
+-- |Margen por categoria |
+select 
+extract(month from ols.fecha) as mes,
+pm.categoria,
+sum(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as venta_bruta_mes_dolarizada,
+sum(round((ols.venta-ols.impuestos+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as venta_neta_mes_dolarizada,
+sum((round((ols.venta+coalesce(ols.descuento,0)+coalesce(ols.creditos,0))/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1))-c1.costo_promedio_usd) as mg_dolarizado
+from stg.order_line_sale ols 
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
+left join stg.cost c1 on c1.codigo_producto = ols.producto
+left join stg.product_master pm on pm.codigo_producto = ols.producto
+group by extract(month from ols.fecha),pm.categoria
+order by 1
 
-
+-----------------------
+WITH inventario_prom AS (
+  SELECT 
+    i.sku,
+    COALESCE(ROUND((SUM(inicial) + SUM(final)) / 2, 0), 0) AS inventario_prom_mes
+  FROM stg.inventory i
+  JOIN stg.store_master sm ON i.tienda = sm.codigo_tienda
+  GROUP BY i.sku
+)
+SELECT 
+  i.sku
+  --CAST(c1.costo_promedio_usd AS NUMERIC) * ip.inventario_prom_mes AS costo_inventario,
+  --sum(venta),
+  --(CAST(c1.costo_promedio_usd AS NUMERIC) * ip.inventario_prom_mes)/(sum(venta))
+FROM stg.inventory i
+left JOIN stg.cost c1 ON i.sku = c1.codigo_producto
+LEFT JOIN inventario_prom ip ON i.sku = ip.sku
+left join stg.order_line_sale ols on ols.producto = i.sku and i.tienda = ols.tienda 
+--GROUP BY i.sku,c1.costo_promedio_usd,ip.inventario_prom_mes
+--ORDER BY i.sku asc;
 
 
 
