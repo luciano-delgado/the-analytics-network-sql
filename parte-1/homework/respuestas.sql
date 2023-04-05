@@ -227,10 +227,11 @@ left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extra
 --11) Calcular la cantidad de items distintos de cada subsubcategoria que se llevan por numero de orden.
 select 
 distinct(ols.orden) as orden,
+pm.subcategoria,
 count(distinct pm.subsubcategoria) as cant_items
 from stg.order_line_sale ols 
 left join stg.product_master pm on pm.codigo_producto = ols.producto
-group by ols.orden
+group by ols.orden,2
 order by 1
 
 --CLASE 4
