@@ -296,6 +296,7 @@ Por lo que pude investigar se puede:
 - INSERT INTO de los valores eliminados
 
 -- PROYECTO INTEGRADOR -- :
+-- # KPIs General
 -- |Ventas brutas, netas y margen|
 select 
 extract(month from ols.fecha) as mes,
@@ -345,7 +346,7 @@ left join stg.product_master pm on pm.codigo_producto = ols.producto
 group by extract(month from ols.fecha),pm.categoria
 order by 1
 
------------------------
+-- |ROI por categoria de producto. ROI = Valor promedio de inventario / ventas netas|
 WITH inventario_prom AS (
   SELECT 
     i.sku,
@@ -353,18 +354,63 @@ WITH inventario_prom AS (
   FROM stg.inventory i
   JOIN stg.store_master sm ON i.tienda = sm.codigo_tienda
   GROUP BY i.sku
-)
+),
+ventas  as (
+select 
+	producto,
+	sum(venta) as venta
+	from stg.order_line_sale ols
+	group by producto
+),
+pre_proceso as (
 SELECT 
-  i.sku
-  --CAST(c1.costo_promedio_usd AS NUMERIC) * ip.inventario_prom_mes AS costo_inventario,
-  --sum(venta),
-  --(CAST(c1.costo_promedio_usd AS NUMERIC) * ip.inventario_prom_mes)/(sum(venta))
-FROM stg.inventory i
-left JOIN stg.cost c1 ON i.sku = c1.codigo_producto
-LEFT JOIN inventario_prom ip ON i.sku = ip.sku
-left join stg.order_line_sale ols on ols.producto = i.sku and i.tienda = ols.tienda 
---GROUP BY i.sku,c1.costo_promedio_usd,ip.inventario_prom_mes
---ORDER BY i.sku asc;
+  pm.categoria,
+  coalesce(round((CAST(c1.costo_promedio_usd AS NUMERIC) * ip.inventario_prom_mes)/(sum(venta)),2),0) as ROI_usd
+FROM inventario_prom ip
+left join stg.cost c1 ON ip.sku = c1.codigo_producto
+left join ventas v on v.producto = ip.sku
+left join stg.product_master pm on pm.codigo_producto = ip.sku
+GROUP BY c1.costo_promedio_usd,ip.inventario_prom_mes,pm.categoria
+ORDER BY 1,2 desc)
+select categoria, sum(roi_usd)
+from pre_proceso
+group by categoria
 
+-- |AOV: Valor promedio de la orden|
+select orden,
+round(sum(venta)/sum(cantidad),2) as valor_prom_orden
+from stg.order_line_sale ols
+group by orden
+order by 1
+
+-- # Contabilidad
+-- |Impuestos pagados |
+select
+sum(impuestos) as impuestos_pagados
+from stg.order_line_sale ols
+-- |Tasa de impuesto. Impuestos / Ventas netas|
+select
+sum(impuestos) as impuestos_pagados,
+sum(venta+creditos+descuento),
+sum(impuestos)/sum(venta+creditos+descuento) as tasa_impuestos
+from stg.order_line_sale ols
+--|Cantidad de creditos otorgados|
+select
+sum(creditos) 
+from stg.order_line_sale ols
+-- |Valor pagado final por order de linea. Valor pagado: Venta - descuento + impuesto - credito|
+select
+orden, 
+coalesce(sum(venta+coalesce(creditos,0)+coalesce(descuento,0)-coalesce(impuestos,0)),0) valor_por_orden
+from stg.order_line_sale ols
+group by orden
+order by 1
+--# Supply Chain
+-- |Costo de inventario promedio por tienda|
+-- |Costo del stock de productos que no se vendieron por tienda|
+-- |Cantidad y costo de devoluciones|
+
+--# Tiendas
+-- |Ratio de conversion. Cantidad de ordenes generadas / Cantidad de gente que entra|
 
 
