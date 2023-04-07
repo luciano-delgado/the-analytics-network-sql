@@ -408,10 +408,79 @@ group by orden
 order by 1
 --# Supply Chain
 -- |Costo de inventario promedio por tienda|
+select 
+	i.tienda,
+	(sum(inicial)+sum(final))/2 as inv_prom,
+	((sum(inicial)+sum(final))/2) * max(c1.costo_promedio_usd)
+	from stg.inventory i
+	left join stg.cost c1 on c1.codigo_producto = i.sku
+	--where sku = 'p100014'
+	group by i.tienda
+	order by i.tienda
+
 -- |Costo del stock de productos que no se vendieron por tienda|
+with no_vendidos as (
+select distinct codigo_producto as pnv
+from stg.product_master pm 
+left join stg.order_line_sale ols on ols.producto = pm.codigo_producto
+where ols.venta is null),
+stock as (
+select 
+	i.sku,
+	(sum(inicial)+sum(final))/2 as stock
+	from stg.inventory i 
+	group by i.sku)
+select 
+codigo_producto,
+stock * c1.costo_promedio_usd
+from stg.cost c1 
+left join no_vendidos nv on nv.pnv = c1.codigo_producto
+left join stock s on s.sku = c1.codigo_producto
+where nv.pnv is not null
 -- |Cantidad y costo de devoluciones|
+CREATE TABLE stg.return_movements
+                 (
+                              orden      	VARCHAR(10)
+                            , envio   		VARCHAR(10)
+			    , item 	        VARCHAR(10)
+                            , cantidad   	int
+			    , id_movimiento int  
+			    , desde 	        VARCHAR(50)
+			    , hasta 		VARCHAR(50)
+			    , recibido_por 	VARCHAR(10)
+                            , fecha      	date
+                 );
+select sum(r.cantidad) cantidad_devoluciones,
+sum(c1.costo_promedio_usd) as costo_devo
+from stg.return_movements r
+left join stg.cost c1 on c1.codigo_producto = r.item
 
 --# Tiendas
 -- |Ratio de conversion. Cantidad de ordenes generadas / Cantidad de gente que entra|
+-- |Ratio de conversion. Cantidad de ordenes generadas / Cantidad de gente que entra|
+with or_generadas as (
+select tienda, 
+count (distinct orden) as ordenes_por_tienda
+from stg.order_line_sale ols 
+group by tienda
+),
+gente_entra as  (
+select tienda, 
+round(coalesce(avg(conteo),0),2) as entradas_avg
+from stg.super_store_count
+	group by tienda
+)
+------ Consulta Final -------
+select 
+coalesce(og.tienda,0) as tiendas_con_ordenes,
+coalesce (ge.tienda,0) as tiendas_con_entradas,
+coalesce(entradas_avg,0) as entradas_avg,
+coalesce(ordenes_por_tienda,0) as ordenes_generadas,
+round(coalesce(ordenes_por_tienda/entradas_avg,0),5) as ratio_ordenes_gente
+from gente_entra ge
+full outer join or_generadas og on og.tienda = ge.tienda
+order by ge.tienda
+
+		
 
 
