@@ -481,6 +481,27 @@ from gente_entra ge
 full outer join or_generadas og on og.tienda = ge.tienda
 order by ge.tienda
 
+-- # Preguntas de entrevistas # -- 
+Como encuentro duplicados en una tabla. Dar un ejemplo mostrando duplicados de la columna orden en la tabla de ventas.
+Respuesta:
+select orden, count(*)
+from stg.order_line_sale ols
+group by orden
+having count(*)>1
+Si bien esta duplicada la orden, la fila entera NO ES IGUAL ya que son ventas distintas.
+
+Como elimino duplicados?
+Respuesta: con un COUNT DISTINCT 
+Cual es la diferencia entre UNION y UNION ALL.
+Respuesta:
+- UNION: Deja solamente registros distntos, si hay repetidos en ambas tablas deja 1 solo
+- UNION ALL: Deja todos los registros por mas que se repitan entre tabla 1 y tabla 2
+Como encuentro registros en una tabla que no estan en otra tabla.(Para probar podes crear dos tablas con una unica columna id que tengan valores: Tabla 1: 1,2,3,4 Tabla 2: 3,4,5,6)
+Respuesta: con un join  y que la pk de una tabla sea nula en la otra.
+Cual es la diferencia entre INNER JOIN y LEFT JOIN. (podes usar la tabla anterior)
+Respuesta: LEFT trae registros encontrados y no encontrados en la segunda tabla en cambio el INNER solo los comunes a ambas tablas. 
+La cantidad total de registros depende de la relacion 1-1,1-n,n-n siendo el resultado final la multplicacion de ambas.
+
 		
 
 
