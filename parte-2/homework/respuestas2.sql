@@ -69,3 +69,12 @@ from stg.vw_parte2_clase1_ej3
 union all
 select count(*) , count (distinct orden)
 from stg.order_line_sale
+
+-- 5 Calcular el margen bruto a nivel Subcategoria de producto. Usar la vista creada.
+
+select 
+subcategoria,
+sum(mg_dolarizado) as mg_por_categoria
+from stg.vw_parte2_clase1_ej3  vw2
+left join stg.product_master pm on pm.codigo_producto = vw2.producto
+group by subcategoria
