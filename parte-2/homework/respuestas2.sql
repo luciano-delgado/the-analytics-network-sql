@@ -12,6 +12,15 @@ cast(fecha as date),
 conteo
 from stg.super_store_count
 -- 2 Recibimos otro archivo con ingresos a tiendas de meses anteriores. Ingestar el archivo y agregarlo a la vista del ejercicio anterior (Ejercicio 1 Clase 6). Cual hubiese sido la diferencia si hubiesemos tenido una tabla? (contestar la ultima pregunta con un texto escrito en forma de comentario)
+create or replace view  stg.vw_parte1_clase2_ej10_v2 as
+-- (No incluyo en rta comandos de CREATE de las nuevas tablas)
+select * from stg.vw_parte1_clase2_ej10 ssc
+   union all  
+  select 
+  cast(tienda as smallint),
+  fecha,
+  conteo
+  from stg.super_store_count_september sscs ;
 -- 3 Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 3 - Ejercicio 10, donde calculamos el margen bruto en dolares. 
 Agregarle la columna de ventas, descuentos, y creditos en dolares para poder reutilizarla en un futuro.
  SELECT ols.orden,
