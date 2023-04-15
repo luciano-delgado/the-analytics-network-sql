@@ -1,4 +1,4 @@
--- 1 Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 2 - Ejercicio 10, 
+-- 1) Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 2 - Ejercicio 10, 
 donde unimos la cantidad de gente que ingresa a tienda usando los dos sistemas.
 
 create or replace view stg.vw_parte1_clase2_ej10 as 
@@ -11,7 +11,7 @@ select tienda,
 cast(fecha as date),
 conteo
 from stg.super_store_count
--- 2 Recibimos otro archivo con ingresos a tiendas de meses anteriores. Ingestar el archivo y agregarlo a la vista del ejercicio anterior (Ejercicio 1 Clase 6). Cual hubiese sido la diferencia si hubiesemos tenido una tabla? (contestar la ultima pregunta con un texto escrito en forma de comentario)
+-- 2) Recibimos otro archivo con ingresos a tiendas de meses anteriores. Ingestar el archivo y agregarlo a la vista del ejercicio anterior (Ejercicio 1 Clase 6). Cual hubiese sido la diferencia si hubiesemos tenido una tabla? (contestar la ultima pregunta con un texto escrito en forma de comentario)
 create or replace view  stg.vw_parte1_clase2_ej10_v2 as
 -- (No incluyo en rta comandos de CREATE de las nuevas tablas)
 select * from stg.vw_parte1_clase2_ej10 ssc
@@ -21,7 +21,7 @@ select * from stg.vw_parte1_clase2_ej10 ssc
   fecha,
   conteo
   from stg.super_store_count_september sscs ;
--- 3 Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 3 - Ejercicio 10, donde calculamos el margen bruto en dolares. 
+-- 3) Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 3 - Ejercicio 10, donde calculamos el margen bruto en dolares. 
 Agregarle la columna de ventas, descuentos, y creditos en dolares para poder reutilizarla en un futuro.
  SELECT ols.orden,
     ols.producto,
@@ -67,7 +67,7 @@ Agregarle la columna de ventas, descuentos, y creditos en dolares para poder reu
      LEFT JOIN stg.cost c1 ON c1.codigo_producto::text = ols.producto::text
      LEFT JOIN stg.monthly_average_fx_rate mfx ON EXTRACT(month FROM mfx.mes) = EXTRACT(month FROM ols.fecha);
 
--- 4 Generar una query que me sirva para verificar que el nivel de agregacion de la tabla de ventas 
+-- 4) Generar una query que me sirva para verificar que el nivel de agregacion de la tabla de ventas 
 (y de la vista) no se haya afectado. 
 Recordas que es el nivel de agregacion/detalle? Lo vimos en la teoria de la parte 1! 
 Nota: La orden M999000061 parece tener un problema verdad? Lo vamos a solucionar mas adelante.
@@ -79,7 +79,7 @@ union all
 select count(*) , count (distinct orden)
 from stg.order_line_sale
 
--- 5 Calcular el margen bruto a nivel Subcategoria de producto. Usar la vista creada.
+-- 5) Calcular el margen bruto a nivel Subcategoria de producto. Usar la vista creada.
 
 select 
 subcategoria,
@@ -87,3 +87,16 @@ sum(mg_dolarizado) as mg_por_categoria
 from stg.vw_parte2_clase1_ej3  vw2
 left join stg.product_master pm on pm.codigo_producto = vw2.producto
 group by subcategoria
+
+--6) Calcular la contribucion de las ventas brutas de cada producto al total de la orden. Por esta vez, si necesitas usar una subquery, podes utilizarla.
+
+select 
+orden, 
+producto,
+round(venta/
+	(select sum(venta) from stg.vw_parte2_clase1_ej3 ),4)*100 as contribucion_por_producto -- SUBQUERY PARA TRAERME EL TOTAL DE SUM(VENTA)
+--subcategoria,
+--sum(mg_dolarizado) as mg_por_categoria
+from stg.vw_parte2_clase1_ej3  vw2
+left join stg.product_master pm on pm.codigo_producto = vw2.producto
+group by orden, producto, venta
