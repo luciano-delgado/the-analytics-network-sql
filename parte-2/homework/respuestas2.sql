@@ -103,9 +103,15 @@ group by orden, producto, venta
 
 
 -- 7) Calcular las ventas por proveedor, para eso cargar la tabla de proveedores por producto. Agregar el nombre el proveedor en la vista del punto 3.
-
-select nombre as proveedor,
-sum(venta) as venta_por_proveedor
-from stg.order_line_sale ols 
-left join stg.suppliers sup on sup.codigo_producto = ols.producto
+-- Ventas por proveedor 
+select nombre, sum(venta_usd) as ventas_usd_proveedor
+from stg.vw_parte2_clase1_ej3 vw -- where producto = 'p100015'
+left join stg.suppliers sup on sup.codigo_producto = vw.producto 
+where is_primary is true
 group by nombre
+-- Agrego proveedores a la vista del ej3 :"vw_parte2_clase1_ej3"
+select * from stg.vw_parte2_clase1_ej3 vw -- where producto = 'p100015'
+left join stg.suppliers sup on sup.codigo_producto = vw.producto 
+where is_primary is true
+
+--8)
