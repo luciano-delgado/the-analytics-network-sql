@@ -491,7 +491,8 @@ having count(*)>1
 Si bien esta duplicada la orden, la fila entera NO ES IGUAL ya que son ventas distintas.
 
 Como elimino duplicados?
-Respuesta: con un COUNT DISTINCT 
+Respuesta: con un COUNT DISTINCT / Con row_number = 1  
+
 Cual es la diferencia entre UNION y UNION ALL.
 Respuesta:
 - UNION: Deja solamente registros distntos, si hay repetidos en ambas tablas deja 1 solo
