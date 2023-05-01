@@ -129,7 +129,7 @@ where is_primary is true --and producto = 'p200087'
 select orden, producto,count(1)
 from cte
 group by orden, producto
-having count(1)>1 -- "p200087"/"M999000061" Unica orden realmente duplicada
+having count(1)>1 -- "p200087"/"M999000061" Unica orden realmente duplicada viene x 3 en tabla original. Abría que sacarla de la data base
 -- VERIFICACION DUPLICADOS 2: con ROW_NUMBER()
 with cte as (
 select * from stg.vw_parte2_clase1_ej3  vw
@@ -138,6 +138,74 @@ where is_primary is true --and producto = 'p200087'
 )
 select orden, row_number() over (partition by orden, producto) as prueba 
 from cte
-order by 2 desc -- "p200087"/"M999000061" Unica orden realmente duplicada viene x 3 
+order by 2 desc -- "p200087"/"M999000061" Unica orden realmente duplicada viene x 3 en tabla original. Abría que sacarla de la data base
 
 -- | CLASE 7 | -- 
+-- 1) Calcular el porcentaje de valores null de la tabla stg.order_line_sale para la columna creditos y descuentos. (porcentaje de nulls en cada columna)
+select 
+round(((select count(orden) from stg.order_line_sale ols where ols.descuento is null))*1.00/(count(venta))*1.00,3) as descuento_null,
+round(((select count(orden) from stg.order_line_sale ols where ols.creditos is null))*1.00/(count(venta))*1.00,3) as creditos_null
+from stg.order_line_sale ols
+
+-- 2) La columna "is_walkout" se refiere a los clientes que llegaron a la tienda y se fueron con el producto en la mano (es decia habia stock disponible). Responder en una misma query:
+Cuantas ordenes fueron "walkout" por tienda?
+Cuantas ventas brutas en USD fueron "walkout" por tienda?
+Cual es el porcentaje de las ventas brutas "walkout" sobre el total de ventas brutas por tienda?
+with t1 as (
+select tienda, count(orden) as ordenes_waltout,
+sum(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as vta_walkout_dolarizada
+from stg.order_line_sale ols
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
+where is_walkout is true
+group by tienda)
+select t1.*, 
+round(vta_walkout_dolarizada /(sum(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1))),3) as porcentaje_walkout
+from stg.order_line_sale ols left join t1 on t1.tienda = ols.tienda
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
+group by 1,2,3
+
+--3) Siguiendo el nivel de detalle de la tabla ventas, hay una orden que no parece cumplirlo. Como identificarias duplicados utilizando una windows function? Nota: Esto hace referencia a la orden M999000061. Tenes que generar una forma de excluir los casos duplicados, para este caso particular y a nivel general, si llegan mas ordenes con duplicaciones.
+with cte as (
+select * from stg.vw_parte2_clase1_ej3  vw
+left join stg.suppliers sup on sup.codigo_producto = vw.producto 
+where is_primary is true 
+),
+filtrado as (
+select orden, row_number() over (partition by orden, producto) as validacion
+from cte
+order by 2 desc)
+select * from filtrado 
+where validacion >1    ---> Esto limpiará cualquier dato nuevo que ingrese duplicado 
+
+-- 4)  Obtener las ventas totales en USD de productos que NO sean de la categoria "TV" NI esten en tiendas de Argentina.
+select 
+producto,
+sum(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),1)) as venta
+from stg.order_line_sale ols
+left join stg.product_master p on p.codigo_producto = ols.producto
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
+where moneda != 'ARS' and subcategoria != 'TV'
+group by producto
+--5) El gerente de ventas quiere ver el total de unidades vendidas por dia junto con otra columna con la cantidad de unidades vendidas una semana atras y la diferencia entre ambos. Nota: resolver en dos querys usando en una CTEs y en la otra windows functions.
+SELECT 
+  fecha,
+  SUM(venta) AS total_venta_por_dia,
+  (SELECT SUM(venta) FROM stg.order_line_sale WHERE fecha = ols.fecha - INTERVAL '7 days') AS total_venta_semana_anterior
+FROM 
+  stg.order_line_sale ols
+GROUP BY 
+  fecha
+ORDER BY 
+  fecha;
