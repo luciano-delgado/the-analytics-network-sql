@@ -1,3 +1,4 @@
+-- | CLASE 6 | -- 
 -- 1) Crear una vista con el resultado del ejercicio de la Parte 1 - Clase 2 - Ejercicio 10, 
 donde unimos la cantidad de gente que ingresa a tienda usando los dos sistemas.
 
@@ -114,4 +115,29 @@ select * from stg.vw_parte2_clase1_ej3 vw -- where producto = 'p100015'
 left join stg.suppliers sup on sup.codigo_producto = vw.producto 
 where is_primary is true
 
---8)
+--8)Verificar que el nivel de detalle de la vista anterior no se haya modificado, en caso contrario que se deberia ajustar? Que decision tomarias para que no se genereren duplicados?
+--Se pide correr la query de validacion.
+--Crear una nueva query que no genere duplicacion.
+--Explicar brevemente (con palabras escrito tipo comentario) que es lo que sucedia.
+
+-- VERIFICACION DUPLICADOS 1: con CTE
+with cte as (
+select * from stg.vw_parte2_clase1_ej3  vw
+left join stg.suppliers sup on sup.codigo_producto = vw.producto 
+where is_primary is true --and producto = 'p200087'
+)
+select orden, producto,count(1)
+from cte
+group by orden, producto
+having count(1)>1 -- "p200087"/"M999000061" Unica orden realmente duplicada
+-- VERIFICACION DUPLICADOS 2: con ROW_NUMBER()
+with cte as (
+select * from stg.vw_parte2_clase1_ej3  vw
+left join stg.suppliers sup on sup.codigo_producto = vw.producto 
+where is_primary is true --and producto = 'p200087'
+)
+select orden, row_number() over (partition by orden, producto) as prueba 
+from cte
+order by 2 desc -- "p200087"/"M999000061" Unica orden realmente duplicada viene x 3 
+
+-- | CLASE 7 | -- 
