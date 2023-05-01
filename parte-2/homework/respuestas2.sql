@@ -209,6 +209,25 @@ GROUP BY
   fecha
 ORDER BY 
   fecha;
+  --------------- Otra opcion con CTE y usando cantidades --------------
+  WITH cte as (
+	select fecha,
+	sum(cantidad) as cant_7_dias_atras_suma
+	from stg.order_line_sale ols
+	group by fecha
+)
+SELECT 
+  ols.fecha,
+  cte.fecha as fecha_hace_una_semana,
+  coalesce(cant_7_dias_atras_suma,0),
+  SUM(cantidad) AS unidades_por_dia,
+  SUM(cantidad) - coalesce(cant_7_dias_atras_suma,0)
+FROM 
+  stg.order_line_sale ols
+  left join cte on cte.fecha  = ols.fecha - INTERVAL '7 days' 
+GROUP BY 
+  ols.fecha,cte.fecha, cant_7_dias_atras_suma
+ORDER BY ols.fecha;
   
   --6) Crear una vista de inventario con la cantidad de inventario por dia, tienda y producto,
 create or replace view vw_parte2_clase7_ej8 as 
@@ -242,5 +261,7 @@ select *,
 (inv_prom *1.00)/(inv7dias*1.00) as DOH
 from pre_final
 
+-- | CLASE 8 |--
+--1) Realizar el Ejercicio 5 de la clase 6 donde calculabamos la contribucion de las ventas brutas de cada producto utilizando una window function.
 
 
