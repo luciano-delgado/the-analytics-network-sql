@@ -211,24 +211,36 @@ ORDER BY
   fecha;
   
   --6) Crear una vista de inventario con la cantidad de inventario por dia, tienda y producto,
+create or replace view vw_parte2_clase7_ej8 as 
 with inv as (
 select 
 fecha,
 tienda,
 sku, (inicial + final )/2 as inv_por_dia
 from stg.inventory i -- 1887 filas totales
-)
+),
+pre_final as (
 select 
-i.fecha,i.tienda,i.sku,i.inv_por_dia,
-i.inv_por_dia * c1.costo_promedio_usd as costo,
-pm.nombre, pm.categoria,
-sm.pais, sm.nombre,
+i.fecha,
+i.tienda,
+i.sku,
+i.inv_por_dia as inv_prom,
+(i.inv_por_dia * c1.costo_promedio_usd) as costo,
+pm.nombre as nombre_producto, 
+pm.categoria,
+sm.pais,
+sm.nombre,
 (select fecha from stg.inventory inv where inv.sku = i.sku order by fecha desc limit 1) last_snapshot,
-sum(venta) over (order by ols.fecha rows between 6 preceding and current row) as vta7
+avg(cantidad) over (partition by i.fecha,i.tienda,i.sku order by ols.fecha rows between 6 preceding and current row) as inv7dias
 from inv i 
 left join stg.product_master pm on pm.codigo_producto = i.sku
 left join stg.store_master sm on sm.codigo_tienda = i.tienda
 left join stg.cost c1 on c1.codigo_producto = i.sku
 left join stg.order_line_sale ols on ols.producto = i.sku and ols.fecha = i.fecha and ols.tienda = i.tienda
--- where i.sku = 'p100014' and i.fecha = '2022-11-22'
-order by fecha asc
+order by fecha asc)
+select *,
+(inv_prom *1.00)/(inv7dias*1.00) as DOH
+from pre_final
+
+
+
