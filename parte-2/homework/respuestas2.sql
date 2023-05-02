@@ -263,5 +263,18 @@ from pre_final
 
 -- | CLASE 8 |--
 --1) Realizar el Ejercicio 5 de la clase 6 donde calculabamos la contribucion de las ventas brutas de cada producto utilizando una window function.
+select orden, 
+producto,
+fecha,
+venta,
+sum((venta+coalesce(descuento,0)+coalesce(creditos,0))
+	 /CASE WHEN vw2.moneda = 'EUR' THEN mfx.cotizacion_usd_eur
+WHEN vw2.moneda = 'ARS' THEN mfx.cotizacion_usd_peso
+WHEN vw2.moneda = 'URU' THEN mfx.cotizacion_usd_uru ELSE 0 END  - c1.costo_promedio_usd)
+	over (partition by producto,orden,fecha,tienda order by producto) as margen
+from stg.vw_parte2_clase1_ej3  vw2
+LEFT JOIN stg.monthly_average_fx_rate mfx ON EXTRACT(month FROM mfx.mes) = EXTRACT(month FROM vw2.fecha)
+LEFT JOIN stg.cost c1 ON c1.codigo_producto = vw2.producto
 
-
+--2) La regla de pareto nos dice que aproximadamente un 20% de los productos generan un 80% de las ventas. Armar una vista a nivel sku donde se pueda identificar por orden de contribucion, ese 20% aproximado de SKU mas importantes. 
+(Nota: En este ejercicios estamos construyendo una tabla que muestra la regla de Pareto)
