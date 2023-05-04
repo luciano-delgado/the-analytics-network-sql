@@ -249,7 +249,7 @@ pm.nombre as nombre_producto,
 pm.categoria,
 sm.pais,
 sm.nombre,
-(select fecha from stg.inventory inv where inv.sku = i.sku order by fecha desc limit 1) last_snapshot,
+case when i.fecha = (select max(fecha) from stg.inventory) then true else false end as last_snapshot,
 avg(cantidad) over (partition by i.fecha,i.tienda,i.sku order by ols.fecha rows between 6 preceding and current row) as inv7dias
 from inv i 
 left join stg.product_master pm on pm.codigo_producto = i.sku
@@ -262,7 +262,7 @@ select *,
 from pre_final
 
 -- | CLASE 8 |--
---1) Realizar el Ejercicio 5 de la clase 6 donde calculabamos la contribucion de las ventas brutas de cada producto utilizando una window function.
+--1) Realizar el Ejercicio 5 (corrección -> 6) de la clase 6 donde calculabamos la contribucion de las ventas brutas de cada producto utilizando una window function.
 select orden, 
 producto,
 fecha,
