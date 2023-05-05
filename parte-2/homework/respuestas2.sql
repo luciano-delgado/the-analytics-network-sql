@@ -330,4 +330,42 @@ from stg.return_movements rm
 left join stg.order_line_sale ols on ols.orden = rm.orden and ols.producto = rm.item
 left join stg.product_master pm on pm.codigo_producto = rm.item
 
+--5) Crear tabla calendario:
 
+CREATE TABLE stg.date1 (
+	fecha_ts timestamp,
+    fecha DATE PRIMARY KEY,
+    mes INTEGER,
+    anio INTEGER,
+    dia_semana TEXT,
+    is_weekend BOOLEAN,
+    mes_text TEXT,
+    anio_fiscal TEXT,
+    anio_fiscal_text TEXT,
+    trimestre_fiscal TEXT,
+    fecha_anio_anterior DATE
+);
+-- Traigo datos con query
+with fechas as(
+select cast('2022-01-01' as date) + (n || 'day'):: interval   as fecha
+from generate_series(0,365) n),
+ datos as 
+(select 
+fecha,
+date_trunc('day', fecha)::date as fecha,
+cast(extract(month from date_trunc('day', fecha)::date) as int) as mes,
+extract(year from date_trunc('day', fecha)::date) as anio,
+to_char(date_trunc('day', fecha)::date,'day') as dia_semana,
+case when extract(dow from fecha) in (0,6) then true else false end as is_weeken,
+to_char(date_trunc('day', fecha)::date,'month') as mes,
+concat('FY', case when extract(month from fecha) >= 2 then extract(year from fecha) + 1 else extract(year from fecha) end)  as anio_fiscal_texto,
+concat('Q', case when extract(month from fecha) in ('1','2','3','4') then '1' 
+	  			 when extract(month from fecha) in ('5','6','7','8') then '2'
+	   			when extract(month from fecha) in ('9','10','11','12') then '3' end)  as trimestre_fiscal,
+fecha - interval '1 year' as fecha_anio_anterior
+from fechas)
+-- Actualizar los campos de la tabla con la información requerida
+insert into stg.date1 
+select * from datos
+-- Verifico que se haya insertado todo
+select * from date1
