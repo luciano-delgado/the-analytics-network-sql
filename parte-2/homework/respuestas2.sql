@@ -315,3 +315,19 @@ select
 venta_mes - vta_mes_ant as crecimiento_nominal,
 (venta_mes - vta_mes_ant)/venta_mes as crecimiento_porcentual
 from datos
+
+-- 4) Crear una vista a partir de la tabla "return_movements" que este a nivel Orden de venta, item y que contenga las siguientes columnas:
+select
+distinct (rm.orden),
+rm.item,
+sum(rm.cantidad) over (partition by item) unidades,
+coalesce((select round(sum(venta)/sum(cantidad),0) from stg.order_line_sale sub_ols where sub_ols.orden = rm.orden and sub_ols.producto = rm.item),0) as valor,
+pm.nombre,
+first_value(desde) over(partition by rm.orden, rm.item order by rm.id_movimiento asc) as primera_locacion,
+--last_value(hasta) over(partition by rm.orden, rm.item order by rm.id_movimiento asc) as ultima_locacion
+last_value(hasta) over(partition by rm.orden, rm.item) as ultima_locacion
+from stg.return_movements rm
+left join stg.order_line_sale ols on ols.orden = rm.orden and ols.producto = rm.item
+left join stg.product_master pm on pm.codigo_producto = rm.item
+
+
