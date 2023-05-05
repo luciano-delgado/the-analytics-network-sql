@@ -278,7 +278,7 @@ LEFT JOIN stg.cost c1 ON c1.codigo_producto = vw2.producto
 
 --2) La regla de pareto nos dice que aproximadamente un 20% de los productos generan un 80% de las ventas. Armar una vista a nivel sku donde se pueda identificar por orden de contribucion, ese 20% aproximado de SKU mas importantes. 
 (Nota: En este ejercicios estamos construyendo una tabla que muestra la regla de Pareto)
-CREATE OR REPLACE VIEW vw_contribucion_producto as (
+CREATE OR REPLACE VIEW stg.vw_contribucion_producto as (
 with cont as (
 -- POR SIMPLIFICACION NO DOLARIZO LAS VENTAS...
 SELECT
