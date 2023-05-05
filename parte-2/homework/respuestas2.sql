@@ -291,3 +291,27 @@ round(contribucion,3)
 from cont
 order by contribucion desc
 	)
+-- 3) Calcular el crecimiento de ventas por tienda mes a mes, con el valor nominal y el valor % de crecimiento.
+
+with ventas_tienda_mes as (
+select 
+tienda,
+extract (month from fecha) as mes,
+sum(venta) as venta_mes
+from stg.order_line_sale 
+-- where tienda  = '3'
+group by tienda, extract (month from fecha)
+order by extract (month from fecha)
+	) 
+, datos as (select 
+vtm.tienda,
+vtm.mes,
+coalesce((select sum(coalesce(venta_mes,0)) from ventas_tienda_mes where vtm.tienda = tienda and mes = vtm.mes -1 group by tienda,mes),0) AS vta_mes_ant,
+venta_mes
+from ventas_tienda_mes vtm
+order by tienda,mes)
+select 
+*,
+venta_mes - vta_mes_ant as crecimiento_nominal,
+(venta_mes - vta_mes_ant)/venta_mes as crecimiento_porcentual
+from datos
