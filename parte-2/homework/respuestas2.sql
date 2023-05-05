@@ -369,3 +369,23 @@ insert into stg.date1
 select * from datos
 -- Verifico que se haya insertado todo
 select * from date1
+
+-- | CLASE 9 | --
+
+-- 1) Calcular el crecimiento de ventas por tienda mes a mes, con el valor nominal y el valor % de crecimiento. Utilizar self join.
+with ventas_tienda_mes as (
+select 
+tienda,
+extract (month from fecha) as mes,
+sum(venta) as venta_mes
+from stg.order_line_sale 
+group by tienda, extract (month from fecha)
+order by extract (month from fecha)
+	) 
+select vtm.*,
+coalesce(vtm2.venta_mes,0) as vta_mes_ant,
+vtm.venta_mes - coalesce(vtm2.venta_mes,0) as crecimiento,
+(vtm.venta_mes - coalesce(vtm2.venta_mes,0))/vtm.venta_mes as porcentual
+from ventas_tienda_mes vtm 
+left join ventas_tienda_mes vtm2 on vtm2.tienda = vtm.tienda AND vtm2.mes = vtm.mes - 1
+order by vtm.tienda 
