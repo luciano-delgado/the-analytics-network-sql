@@ -389,3 +389,16 @@ vtm.venta_mes - coalesce(vtm2.venta_mes,0) as crecimiento,
 from ventas_tienda_mes vtm 
 left join ventas_tienda_mes vtm2 on vtm2.tienda = vtm.tienda AND vtm2.mes = vtm.mes - 1
 order by vtm.tienda 
+
+--2) Hacer un update a la tabla de product_master agregando una columna llamada "marca"
+UPDATE stg.product_master
+SET marca = 
+    CASE 
+        WHEN lower(nombre) LIKE '%samsung%' THEN 'Samsung'
+        WHEN lower(nombre) LIKE '%philips%' THEN 'Phillips'
+        WHEN lower(nombre) LIKE 'levi%' THEN 'Levis'
+        WHEN lower(nombre) LIKE 'jbl%' THEN 'JBL'
+        WHEN lower(nombre) LIKE '%motorola%' THEN 'Motorola'
+        WHEN lower(nombre) LIKE 'tommy%' THEN 'TH'
+        ELSE 'Unknown'
+    END;
