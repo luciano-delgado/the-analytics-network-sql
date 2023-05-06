@@ -402,3 +402,45 @@ SET marca =
         WHEN lower(nombre) LIKE 'tommy%' THEN 'TH'
         ELSE 'Unknown'
     END;
+--3) 
+
+CREATE TABLE stg.facturacion (
+  id SERIAL PRIMARY KEY,
+  empresa TEXT NOT NULL,
+  rubro TEXT NOT NULL,
+  facturacion FLOAT NOT NULL
+);
+
+INSERT INTO stg.facturacion (empresa, rubro, facturacion)
+VALUES ('El Corte Ingles', 'Departamental', 110990000000),
+       ('Mercado Libre', 'ECOMMERCE', 115860000000),
+       ('Fallabela', 'departamental', 20460000),
+       ('Tienda Inglesa', 'Departamental', 10780000),
+       ('Zara', 'INDUMENTARIA', 999980000)
+
+	with cte as (
+	select 
+		empresa,
+		case when lower(rubro) = 'departamental' then 'departamental'
+		when lower(rubro) = 'ecommerce' then 'ecommerce'
+		when lower(rubro) = 'indumentaria' then 'indumentaria' end as rubro,
+		facturacion
+		from stg.facturacion
+	), cte2 as (select 
+	rubro,
+	facturacion,
+	length(facturacion::text) as long,
+	case when length(sum(facturacion::float)::text) >=12 then 'B'
+	else 'M'
+	end as tag,
+	case when length(sum(facturacion::float)::text) >=12 then round(facturacion/10^9,2)
+	else round(facturacion/10^6,2)
+	end as conversion
+	from cte
+	group by rubro, facturacion)
+	select 
+	rubro,
+	tag,
+	sum(conversion) 
+	from cte2
+	group by rubro,tag
