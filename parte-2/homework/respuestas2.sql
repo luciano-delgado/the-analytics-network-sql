@@ -402,7 +402,7 @@ SET marca =
         WHEN lower(nombre) LIKE 'tommy%' THEN 'TH'
         ELSE 'Unknown'
     END;
---3) 
+--3) Un jefe de area tiene una tabla que contiene datos sobre las principales empresas de distintas industrias en rubros que pueden ser competencia...
 
 CREATE TABLE stg.facturacion (
   id SERIAL PRIMARY KEY,
@@ -418,29 +418,39 @@ VALUES ('El Corte Ingles', 'Departamental', 110990000000),
        ('Tienda Inglesa', 'Departamental', 10780000),
        ('Zara', 'INDUMENTARIA', 999980000)
 
-	with cte as (
-	select 
-		empresa,
-		case when lower(rubro) = 'departamental' then 'departamental'
-		when lower(rubro) = 'ecommerce' then 'ecommerce'
-		when lower(rubro) = 'indumentaria' then 'indumentaria' end as rubro,
-		facturacion
-		from stg.facturacion
-	), cte2 as (select 
-	rubro,
-	facturacion,
-	length(facturacion::text) as long,
-	case when length(sum(facturacion::float)::text) >=12 then 'B'
-	else 'M'
-	end as tag,
-	case when length(sum(facturacion::float)::text) >=12 then round(facturacion/10^9,2)
-	else round(facturacion/10^6,2)
-	end as conversion
-	from cte
-	group by rubro, facturacion)
-	select 
-	rubro,
-	tag,
-	sum(conversion) 
-	from cte2
-	group by rubro,tag
+with cte as (
+select 
+empresa,
+case when lower(rubro) = 'departamental' then 'departamental'
+when lower(rubro) = 'ecommerce' then 'ecommerce'
+when lower(rubro) = 'indumentaria' then 'indumentaria' end as rubro,
+facturacion
+from stg.facturacion
+), cte2 as (
+select 
+rubro,
+facturacion,
+length(facturacion::text) as long
+from cte
+group by rubro, facturacion)
+, final as (select 
+rubro,
+sum(facturacion)/10^9 as monto_final
+from cte2
+group by rubro,facturacion
+) , cte3 as (
+select 
+rubro,
+ case when rubro = 'indumentaria' then SUM(CAST(monto_final AS NUMERIC))*10^3 else 
+ ROUND(SUM(CAST(monto_final AS NUMERIC)), 2) end as monto
+from final
+group by rubro
+), cte4 as (
+select *,
+case when rubro = 'indumentaria' then 'M' else 'B' end as tag 
+from cte3)
+select 
+rubro, 
+concat(monto::text, tag)
+from cte4
+
