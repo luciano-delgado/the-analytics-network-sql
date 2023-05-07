@@ -457,39 +457,46 @@ from cte4
 -- |INTEGRADOR 2| --
 
 -- CREO LA TABLA -- 
-create table stg.integrador2 (
-fecha date,
+create table stg.integrador_2 (
+orden varchar(10),
+	producto varchar(10),
+	cantidad int,
+	venta numeric(18,5),
+	descuento numeric(18,5),
+	impuestos numeric(18,5),
+	creditos numeric(18,5),
+	moneda varchar(3),
+	fecha date,
 	dia numeric,
-	mes numeric,
+	mes numeric
 	anio numeric,
 	anio_fiscal_texto text,
 	q_fiscal text,
-	producto varchar(10),
 	categoria varchar(255),
 	subcategoria varchar(255),
 	subsubcategoria varchar(255),
-	tienda smallint,
 	tienda_pais varchar(100),
 	tienda_prov varchar(100),
 	tienda_nombre varchar(255)
 );
 -- GENERO QUERY CON DATOS A INSERTAR -- 
 with datos as (select
-fecha, extract(day from fecha) as dia,extract(month from fecha) as mes,extract(year from fecha) as anio,
+ols.orden, ols.producto, ols.cantidad, ols.venta, ols.descuento, ols.impuestos, ols.creditos, ols.moneda, ols.fecha, 
+extract(day from fecha) as dia,extract(month from fecha) as mes,extract(year from fecha) as anio,
 concat('FY', case when extract(month from fecha) >= 2 then extract(year from fecha) + 1 else extract(year from fecha) end)  as anio_fiscal_texto,
 concat('Q', case when extract(month from fecha) in ('1','2','3','4') then '1' 
 	  			 when extract(month from fecha) in ('5','6','7','8') then '2'
 	   			when extract(month from fecha) in ('9','10','11','12') then '3' end)  as q_fiscal,
-producto, pm.categoria, pm.subcategoria, pm.subsubcategoria,
-tienda, sm.pais as tienda_pais, sm.provincia as tienda_prov, sm.nombre as tienda_nombre
+pm.categoria, pm.subcategoria, pm.subsubcategoria,
+ sm.pais as tienda_pais, sm.provincia as tienda_prov, sm.nombre as tienda_nombre
 from stg.order_line_sale ols
 inner join stg.store_master sm on sm.codigo_tienda = ols.tienda
 inner join stg.product_master pm on pm.codigo_producto = ols.producto
 inner join stg.suppliers sp on sp.codigo_producto = ols.producto 
 where sp.is_primary is true)
 -- INSERTO DATOS 
-insert into stg.integrador2 
+insert into stg.integrador_2 
 select * from datos 
 -- VERIFICO QUE SE INSERTARON
-select * from stg.integrador2
+select * from stg.integrador_2
 
