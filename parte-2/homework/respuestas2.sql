@@ -317,6 +317,7 @@ venta_mes - vta_mes_ant as crecimiento_nominal,
 from datos
 
 -- 4) Crear una vista a partir de la tabla "return_movements" que este a nivel Orden de venta, item y que contenga las siguientes columnas:
+create or replace view stg.vw_return_movements as 
 select
 distinct (rm.orden),
 rm.item,
