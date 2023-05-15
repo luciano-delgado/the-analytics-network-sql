@@ -279,18 +279,46 @@ LEFT JOIN stg.cost c1 ON c1.codigo_producto = vw2.producto
 --2) La regla de pareto nos dice que aproximadamente un 20% de los productos generan un 80% de las ventas. Armar una vista a nivel sku donde se pueda identificar por orden de contribucion, ese 20% aproximado de SKU mas importantes. 
 (Nota: En este ejercicios estamos construyendo una tabla que muestra la regla de Pareto)
 CREATE OR REPLACE VIEW stg.vw_contribucion_producto as (
-with cont as (
--- POR SIMPLIFICACION NO DOLARIZO LAS VENTAS...
+with 
+ols_usd as (
+select
+	ols.*,
+coalesce(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as venta_usd,
+	round(ols.descuento/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2) as descuento_usd,
+	coalesce(round(ols.impuestos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as impuestos_usd,
+	coalesce(round(ols.creditos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as creditos_usd
+from stg.order_line_sale ols
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
+)
+, cont as (
 SELECT
   distinct (producto),
-  SUM(venta) OVER (PARTITION BY producto) / SUM(venta) OVER () AS contribucion
-FROM stg.order_line_sale)
+  SUM(venta_usd) OVER (PARTITION BY producto) / SUM(venta_usd) OVER () AS contribucion
+FROM ols_usd
+)
 select 
 producto,
 round(contribucion,3) 
 from cont
 order by contribucion desc
-	)
+)
+
 -- 3) Calcular el crecimiento de ventas por tienda mes a mes, con el valor nominal y el valor % de crecimiento.
 
 with ventas_tienda_mes as (
@@ -500,4 +528,77 @@ insert into stg.integrador_2
 select * from datos 
 -- VERIFICO QUE SE INSERTARON
 select * from stg.integrador_2
+------------------------------------------------------ 2DO INTENTO -----------------------------------------------------------------
+with 
+ols_usd as (
+select
+	ols.*,
+coalesce(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as venta_usd,
+	round(ols.descuento/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2) as descuento_usd,
+	coalesce(round(ols.impuestos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as impuestos_usd,
+	coalesce(round(ols.creditos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as creditos_usd
+from stg.order_line_sale ols
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
+)
+, cantidad_philips as(
+	select 
+	sum(case when lower(nombre) like ('%philips%') then 1 else 0 end) as cantidad_productos_philips,
+	200/(sum(case when lower(nombre) like ('%philips%') then 1 else 0 end)) as prorateo
+	from ols_usd
+	left join stg.product_master pm
+	on ols_usd.producto = pm.codigo_producto
+)
+, integrador2 as (select 
+ols_usd.fecha, producto, ols_usd.tienda, -- AGREGACION
+sm.nombre,sm.pais, sm.provincia, -- Tienda
+pm.categoria, pm.subcategoria, pm.subsubcategoria, -- SKU
+-- Fecha: dia, mes, año, año fiscal, quarter fiscal
+extract(day from ols_usd.fecha) as dia, extract(month from ols_usd.fecha) as mes, extract(year from ols_usd.fecha) as anio,
+concat('FY', case when extract(month from ols_usd.fecha) >= 2 then extract(year from ols_usd.fecha) + 1 else extract(year from ols_usd.fecha) end)  as Fiscal_year,
+concat('Q', case when extract(month from ols_usd.fecha) in ('1','2','3','4') then '1' when extract(month from ols_usd.fecha) in ('5','6','7','8') then '2'when extract(month from ols_usd.fecha) in ('9','10','11','12') then '3' end)  as fiscal_quarter,
+venta, coalesce(descuento,0) as descuentos, coalesce(creditos,0) as creditos, coalesce(impuestos,0) as impuestos, -- Importes 
+coalesce(round((i.inicial+i.final)/2, 2),0) as promedio_inv, -- Inventario
+c1.costo_promedio_usd, -- Costo inventario
+(select sum(unidades) from stg.vw_return_movements rm2 where rm2.orden = ols_usd.orden and rm2.item = ols_usd.producto) as devolucion_cant,
+case when lower(pm.nombre) like ('%philips%') then prorateo else 0 end as tv_prorateo-- Prorateo TV mail
+from ols_usd 
+left join stg.store_master sm on sm.codigo_tienda = ols_usd.tienda
+left join stg.product_master pm on pm.codigo_producto = ols_usd.producto
+left join stg.inventory i on i.sku = ols_usd.producto and i.tienda = ols_usd.tienda and i.fecha = ols_usd.fecha
+left join stg.cost c1 on c1.codigo_producto = ols_usd.producto
+left join stg.vw_return_movements rm on rm.orden = ols_usd.orden and rm.item = ols_usd.producto 
+left join cantidad_philips on True -- #Trucazo
+left join stg.suppliers sp on sp.codigo_producto = ols_usd.producto 
+where sp.is_primary is true -- and ols_usd.producto = 'p200088'
+order by fecha, producto, tienda
+)
+select 
+sum(venta) as ventas_brutas, sum(descuentos) as descuentos, sum(impuestos) as impuestos, sum(creditos) as creditos,
+sum(venta) + sum(descuentos) as ventas_netas,
+sum(venta) + sum(descuentos) - sum(impuestos) + sum(creditos) as valor_final_pagado,
+sum(venta)/avg(promedio_inv*costo_promedio_usd) as ROI,
+-- DOH...
+-- Costos...
+sum(venta) + sum(descuentos) + sum(creditos) - sum(costo_promedio_usd*(select sum(cantidad) from ols_usd)) as margen_bruto,
+sum(venta) + sum(descuentos) + sum(creditos) - sum(costo_promedio_usd*(select sum(cantidad) from ols_usd)) + 200 as AGM,
+sum(venta)/(select count(distinct orden) from ols_usd) as AVO,
+sum(devolucion_cant) as numero_devoluciones,
+-- Ratio conversion...
+from integrador2
 
