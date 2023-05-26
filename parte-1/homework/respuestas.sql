@@ -583,3 +583,138 @@ count(subsubcategoria) as cant_items
 from stg.order_line_sale ols 
 left join stg.product_master pm on pm.codigo_producto = ols.producto
 group by subcategoria
+
+--  INTEGRADOR 1
+/*-- |AOV: Valor promedio de la orden|
+Tenes que dividir por la cantidad de ordenes no de productos! */
+select orden,
+round(sum(venta)/count(orden),2) as valor_prom_orden
+from stg.order_line_sale ols
+group by orden
+order by orden
+
+/*-- |Valor pagado final por order de linea. Valor pagado: Venta - descuento + impuesto - credito|
+Falto pasar a dólares*/
+with 
+ols_usd as (
+select
+	ols.*,
+coalesce(round(ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as venta_usd,
+	round(ols.descuento/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2) as descuento_usd,
+	coalesce(round(ols.impuestos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as impuestos_usd,
+	coalesce(round(ols.creditos/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as creditos_usd
+from stg.order_line_sale ols
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
+)
+select 
+orden,
+coalesce(sum(venta-coalesce(creditos,0)-coalesce(descuento,0)+coalesce(impuestos,0)),0) valor_por_orden
+from ols_usd
+group by orden
+
+/*=============================================*/
+-- |Costo de inventario promedio por tienda|
+/*Te dejo como debería ser —>*/
+select 
+    i.tienda,
+    extract(month from i.fecha) as mes,
+    avg((inicial+final)/2 * c1.costo_promedio_usd) as inventario_promedio_dia
+    from stg.inventory i
+    left join stg.cost c1 on c1.codigo_producto = i.sku
+    where i.sku = 'p300001'
+    and i.tienda = 1
+    group by i.tienda,extract(month from i.fecha) 
+    order by i.tienda
+
+-- |Costo del stock de productos que no se vendieron por tienda|
+
+/*Esta muy bien! No era fácil! DOs cambios:
+Ajusta el calculo de stock como te pase arriba
+Hace un inner join asi directamente te trae los NO VENDIDOS!*/
+
+-- |Costo del stock de productos que no se vendieron por tienda|
+with no_vendidos as (
+select distinct codigo_producto as pnv
+from stg.product_master pm 
+left join stg.order_line_sale ols on ols.producto = pm.codigo_producto
+where ols.venta is null),
+stock as (
+select 
+	i.sku,
+	avg((inicial+final)/2) as stock
+	from stg.inventory i 
+	group by i.sku)
+select 
+codigo_producto,
+stock * c1.costo_promedio_usd costo_no_vendido
+from stg.cost c1 
+inner join no_vendidos nv on nv.pnv = c1.codigo_producto
+left join stock s on s.sku = c1.codigo_producto
+where nv.pnv is not null
+
+-- |Ratio de conversion. Cantidad de ordenes generadas / Cantidad de gente que entra|
+/*Te cambio la consulta final por eso, mas simple. El resto muy bien! */
+select 
+coalesce(ge.tienda,og.tienda),
+round(coalesce(ordenes_por_tienda/entradas_avg,0),5) as ratio_ordenes_gente
+from gente_entra ge
+full outer join or_generadas og on og.tienda = ge.tienda
+order by coalesce(ge.tienda,og.tienda)
+
+-- |ROI por categoria de producto. ROI = ventas netas / Valor promedio de inventario 
+/*Te dejo como lo calcularia*/
+with costo_inventario as (
+select 
+    extract(month from i.fecha) as mes,
+    i.sku,
+    avg((inicial+final)/2 * c1.costo_promedio_usd) as cost_usd
+    from stg.inventory i
+    left join stg.cost c1 
+    on c1.codigo_producto = i.sku
+    group by i.sku, extract(month from i.fecha) 
+)
+
+, ventas_items as (
+select
+    producto,
+    extract(month from fecha) as mes,
+    sum(round(ols.venta/(case 
+    when moneda = 'EUR' then mfx.cotizacion_eur_peso
+    when moneda = 'ARS' then mfx.cotizacion_usd_peso
+    when moneda = 'URU' then mfx.cotizacion_usd_uru
+    else 0 end),1)) as venta_bruta_usd
+from stg.order_line_sale ols
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
+    group by 1,2
+)
+
+select 
+    coalesce(i.mes, vi.mes) as mes, 
+    --coalesce(i.sku, vi.producto) as producto,
+    pm.subcategoria,
+    --cost_usd,
+    --venta_bruta_usd,
+    sum(coalesce(venta_bruta_usd,0))/sum(cost_usd) as roi
+from costo_inventario i
+full outer join ventas_items vi
+on i.sku = vi.producto and vi.mes = i.mes
+left join stg.product_master pm 
+on coalesce(i.sku, vi.producto) = pm.codigo_producto
+where coalesce(i.mes, vi.mes) = 11 -- filtro mes por que es solo el mes que tenemos inventario
+group by 1,2
