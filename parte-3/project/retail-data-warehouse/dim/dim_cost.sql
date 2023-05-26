@@ -23,12 +23,16 @@ CREATE TABLE dim.product_master
                  );
 		 
 		 
--- Tabla: dim.cost con PK y FK: Una vez que tenga dim.product_master
+/*Intento 1: Me dio error "ERROR:  no hay restricción unique que coincida con las columnas dadas en la tabla referida «product_master»"
+Entonces agrego la restricción de UNIQUE con ayuda del ALTER TABLE*/
+ALTER TABLE dim.product_master
+ADD CONSTRAINT unique_codigo_producto UNIQUE (codigo_producto);
+-- Tabla: dim.cost con PK y FK
 DROP TABLE IF EXISTS dim.cost;
 CREATE TABLE IF NOT EXISTS dim.cost(
 product_id varchar(10) PRIMARY KEY, -- PK
 cost_usd numeric,
-	-- FK
+	-- FK: Cada valor que aparezca en dim.cost debe estar en dim.product_master
 	CONSTRAINT fk_product_id_cost
 	FOREIGN KEY (product_id)
 	REFERENCES dim.product_master(codigo_producto)
