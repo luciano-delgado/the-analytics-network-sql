@@ -37,3 +37,5 @@ cost_usd numeric,
 	FOREIGN KEY (product_id)
 	REFERENCES dim.product_master(codigo_producto)
 );
+
+/*Con la relación establecida ya puedo generar ERD y descargar pdf*/
