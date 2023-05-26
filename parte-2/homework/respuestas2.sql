@@ -483,122 +483,149 @@ rubro,
 concat(monto::text, tag)
 from cte4
 
--- |INTEGRADOR 2| --
+-- |INTEGRADOR 2| -- 26/5/2023
 
 -- CREO LA TABLA -- 
 create table stg.integrador_2 (
-orden varchar(10),
-	producto varchar(10),
-	cantidad int,
-	venta numeric(18,5),
-	descuento numeric(18,5),
-	impuestos numeric(18,5),
-	creditos numeric(18,5),
-	moneda varchar(3),
 	fecha date,
+	producto varchar(10),
+	tienda smallint,
+	orden varchar(10),
+	gente_ingresada smallint,
+	cantidad int,
+	tienda_nombre varchar(255)
+	tienda_pais varchar(100),
+	tienda_prov varchar(100),
+	categoria varchar(255),
+	subcategoria varchar(255),
+	subsubcategoria varchar(255),
 	dia numeric,
 	mes numeric
 	anio numeric,
 	anio_fiscal_texto text,
 	q_fiscal text,
-	categoria varchar(255),
-	subcategoria varchar(255),
-	subsubcategoria varchar(255),
-	tienda_pais varchar(100),
-	tienda_prov varchar(100),
-	tienda_nombre varchar(255)
+	ventas numeric(18,5),
+	descuentos numeric(18,5),
+	creditos numeric(18,5),
+	impuestos numeric(18,5),
+	promedio_inv numeric(18,5),
+	promedio_costo numeric(18,5),
+	cantidad_devolucion numeric(18,5),
+	otros_ingresos bigint,
+
 );
 -- GENERO QUERY CON DATOS A INSERTAR -- 
-with datos as (select
-ols.orden, ols.producto, ols.cantidad, ols.venta, ols.descuento, ols.impuestos, ols.creditos, ols.moneda, ols.fecha, 
-extract(day from fecha) as dia,extract(month from fecha) as mes,extract(year from fecha) as anio,
-concat('FY', case when extract(month from fecha) >= 2 then extract(year from fecha) + 1 else extract(year from fecha) end)  as anio_fiscal_texto,
-concat('Q', case when extract(month from fecha) in ('1','2','3','4') then '1' 
-	  			 when extract(month from fecha) in ('5','6','7','8') then '2'
-	   			when extract(month from fecha) in ('9','10','11','12') then '3' end)  as q_fiscal,
-pm.categoria, pm.subcategoria, pm.subsubcategoria,
- sm.pais as tienda_pais, sm.provincia as tienda_prov, sm.nombre as tienda_nombre
-from stg.order_line_sale ols
-inner join stg.store_master sm on sm.codigo_tienda = ols.tienda
-inner join stg.product_master pm on pm.codigo_producto = ols.producto
-inner join stg.suppliers sp on sp.codigo_producto = ols.producto 
-where sp.is_primary is true)
--- INSERTO DATOS 
-insert into stg.integrador_2 
-select * from datos 
--- VERIFICO QUE SE INSERTARON
-select * from stg.integrador_2
------------------------------------------------------- 2DO INTENTO -----------------------------------------------------------------
-with 
-ols_usd as (
-select
-	ols.*,
-coalesce(round(ols.venta/(case 
-	when moneda = 'EUR' then mfx.cotizacion_usd_eur
-	when moneda = 'ARS' then mfx.cotizacion_usd_peso
-	when moneda = 'URU' then mfx.cotizacion_usd_uru
-	else 0 end),2),0) as venta_usd,
-	round(ols.descuento/(case 
-	when moneda = 'EUR' then mfx.cotizacion_usd_eur
-	when moneda = 'ARS' then mfx.cotizacion_usd_peso
-	when moneda = 'URU' then mfx.cotizacion_usd_uru
-	else 0 end),2) as descuento_usd,
-	coalesce(round(ols.impuestos/(case 
-	when moneda = 'EUR' then mfx.cotizacion_usd_eur
-	when moneda = 'ARS' then mfx.cotizacion_usd_peso
-	when moneda = 'URU' then mfx.cotizacion_usd_uru
-	else 0 end),2),0) as impuestos_usd,
-	coalesce(round(ols.creditos/(case 
-	when moneda = 'EUR' then mfx.cotizacion_usd_eur
-	when moneda = 'ARS' then mfx.cotizacion_usd_peso
-	when moneda = 'URU' then mfx.cotizacion_usd_uru
-	else 0 end),2),0) as creditos_usd
-from stg.order_line_sale ols
-left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha)
-)
-, cantidad_philips as(
-	select 
-	sum(case when lower(nombre) like ('%philips%') then 1 else 0 end) as cantidad_productos_philips,
-	200/(sum(case when lower(nombre) like ('%philips%') then 1 else 0 end)) as prorateo
-	from ols_usd
-	left join stg.product_master pm
-	on ols_usd.producto = pm.codigo_producto
-)
-, integrador2 as (select 
-ols_usd.fecha, producto, ols_usd.tienda, -- AGREGACION
-sm.nombre,sm.pais, sm.provincia, -- Tienda
-pm.categoria, pm.subcategoria, pm.subsubcategoria, -- SKU
--- Fecha: dia, mes, año, año fiscal, quarter fiscal
-extract(day from ols_usd.fecha) as dia, extract(month from ols_usd.fecha) as mes, extract(year from ols_usd.fecha) as anio,
-concat('FY', case when extract(month from ols_usd.fecha) >= 2 then extract(year from ols_usd.fecha) + 1 else extract(year from ols_usd.fecha) end)  as Fiscal_year,
-concat('Q', case when extract(month from ols_usd.fecha) in ('1','2','3','4') then '1' when extract(month from ols_usd.fecha) in ('5','6','7','8') then '2'when extract(month from ols_usd.fecha) in ('9','10','11','12') then '3' end)  as fiscal_quarter,
-venta, coalesce(descuento,0) as descuentos, coalesce(creditos,0) as creditos, coalesce(impuestos,0) as impuestos, -- Importes 
-coalesce(round((i.inicial+i.final)/2, 2),0) as promedio_inv, -- Inventario
-c1.costo_promedio_usd, -- Costo inventario
-(select sum(unidades) from stg.vw_return_movements rm2 where rm2.orden = ols_usd.orden and rm2.item = ols_usd.producto) as devolucion_cant,
-case when lower(pm.nombre) like ('%philips%') then prorateo else 0 end as tv_prorateo-- Prorateo TV mail
-from ols_usd 
-left join stg.store_master sm on sm.codigo_tienda = ols_usd.tienda
-left join stg.product_master pm on pm.codigo_producto = ols_usd.producto
-left join stg.inventory i on i.sku = ols_usd.producto and i.tienda = ols_usd.tienda and i.fecha = ols_usd.fecha
-left join stg.cost c1 on c1.codigo_producto = ols_usd.producto
-left join stg.vw_return_movements rm on rm.orden = ols_usd.orden and rm.item = ols_usd.producto 
-left join cantidad_philips on True -- #Trucazo
-left join stg.suppliers sp on sp.codigo_producto = ols_usd.producto 
-where sp.is_primary is true -- and ols_usd.producto = 'p200088'
-order by fecha, producto, tienda
-)
+--> FUNCION CONVERTIR USD
+create function stg.convert_usd(moneda varchar(3),valor decimal(18,5), fecha date) returns decimal(18,5) 
+as $$
 select 
-sum(venta) as ventas_brutas, sum(descuentos) as descuentos, sum(impuestos) as impuestos, sum(creditos) as creditos,
-sum(venta) + sum(descuentos) as ventas_netas,
-sum(venta) + sum(descuentos) - sum(impuestos) + sum(creditos) as valor_final_pagado,
-sum(venta)/avg(promedio_inv*costo_promedio_usd) as ROI,
--- DOH...
--- Costos...
-sum(venta) + sum(descuentos) + sum(creditos) - sum(costo_promedio_usd*(select sum(cantidad) from ols_usd)) as margen_bruto,
-sum(venta) + sum(descuentos) + sum(creditos) - sum(costo_promedio_usd*(select sum(cantidad) from ols_usd)) + 200 as AGM,
-sum(venta)/(select count(distinct orden) from ols_usd) as AVO,
-sum(devolucion_cant) as numero_devoluciones,
--- Ratio conversion...
-from integrador2
+coalesce(round(valor/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end),2),0) as valor_usd
+from stg.monthly_average_fx_rate mfx 
+where extract(month from mfx.mes) = extract(month from fecha);
+$$ language sql
+;
+-- > FUNCION FY
+create function stg.fiscal_year(fecha date) returns varchar(10)
+as $$
+select 
+concat('FY', 
+	   case when extract(month from fecha) >= 2 then extract(year from fecha) + 1 
+	   else extract(year from fecha) end)  
+	   as Fiscal_year;
+$$ language sql
+;
+--> FUNCION FQ
+create function stg.fiscal_quarter(fecha date) returns varchar(10)
+as $$
+select 
+concat('Q', 
+	   case when extract(month from fecha) in ('1','2','3','4') 
+	   then '1' when extract(month from fecha) in ('5','6','7','8') 
+	   then '2'when extract(month from fecha) in ('9','10','11','12') 
+	   then '3' end)  
+	   as fiscal_quarter;
+$$ language sql
+;
+--> ARMADO DE OBT "SINGLE SOURCE TRUTH"
+with cte_ajustes as (
+select 
+	producto as producto_cte,
+	200/(select sum(cantidad) from stg.order_line_sale ols left join stg.product_master pm on pm.codigo_producto = ols.producto
+	where lower(pm.nombre) like ('%philips%')) 
+		as otros_ingresos
+	from stg.order_line_sale ols
+	left join stg.product_master pm on pm.codigo_producto = ols.producto
+	group by pm.nombre,producto
+)
+, obt as (
+select 
+-- AGREGACION/GRANULARIDAD
+ols.fecha, 
+producto, 
+ols.tienda, 
+ols.orden, -- nro orden
+spc.conteo as gente_ingresada, -- gente que ingresó ese dia
+ols.cantidad, -- cantidad vendida
+sm.nombre,sm.pais, sm.provincia, -- tienda
+pm.categoria, pm.subcategoria, pm.subsubcategoria, -- sku
+extract(day from ols.fecha) as dia, -- Dia
+extract(month from ols.fecha) as mes, -- Mes
+extract(year from ols.fecha) as anio, -- Año
+stg.fiscal_quarter(ols.fecha) as fq, -- FQ
+stg.fiscal_year(ols.fecha) as fy, -- FY
+-- Importes 
+stg.convert_usd(ols.moneda, ols.venta, ols.fecha) as ventas, 
+stg.convert_usd(ols.moneda, ols.descuento, ols.fecha) as descuentos, 
+stg.convert_usd(ols.moneda, ols.creditos, ols.fecha) as creditos,
+stg.convert_usd(ols.moneda, ols.impuestos, ols.fecha) as impuestos, 
+-- Inventario promedio 
+coalesce(round((i.inicial+i.final)/2, 2),0) as promedio_inv, -- por item (Nivel de Ag: item, tienda, fecha)
+-- Costo inventario
+c1.costo_promedio_usd as promedio_costo,
+-- Devoluciones
+coalesce((select sum(unidades) from stg.vw_return_movements rm2 where rm2.orden = ols.orden and rm2.item = ols.producto),0) as cantidad_devolucion,
+-- Prorateo TV mail
+coalesce(case when lower(pm.nombre) like ('%philips%') then otros_ingresos end,0) as otros_ingresos
+FROM stg.order_line_sale ols
+left join stg.store_master sm on sm.codigo_tienda = ols.tienda
+left join stg.super_store_count spc on spc.tienda = ols.tienda and cast(spc.fecha as date) = ols.fecha
+left join stg.product_master pm on pm.codigo_producto = ols.producto
+left join stg.inventory i on i.sku = ols.producto and i.tienda = ols.tienda and i.fecha = ols.fecha
+left join stg.cost c1 on c1.codigo_producto = ols.producto
+left join stg.vw_return_movements rm on rm.orden = ols.orden and rm.item = ols.producto 
+left join cte_ajustes aj on True and aj.producto_cte = ols.producto -- #On True
+left join stg.suppliers sp on sp.codigo_producto = ols.producto 
+where sp.is_primary is true 
+)
+
+--> METRICAS
+select   -- * from obt
+sum(ventas),
+sum(descuentos),
+sum(creditos),
+sum(impuestos),
+sum(ventas) - sum(descuentos) as ventas_netas,
+sum(ventas) - sum(descuentos) - sum(creditos) - sum(impuestos) as valor_final_pagado,
+--ROI
+sum(ventas)/avg(promedio_inv*promedio_costo) as roi,
+-- DOH:(hice vtas promedio/inventario promedio)
+(sum(ventas)/(select count (distinct fecha) from obt))/avg(promedio_inv) as doh, 
+-- COSTOS 
+sum(promedio_costo*promedio_inv) as costo_inventario,
+sum(promedio_costo*cantidad) as costo_cantidad_vendida,
+sum(promedio_costo*cantidad_devolucion) as cantidad_devuelta,
+-- AGM
+sum(ventas) + sum(descuentos) + sum(creditos) - sum(promedio_costo*cantidad) + sum(otros_ingresos) as AGM,
+-- NRO DEVOLUCIONES
+sum(cantidad_devolucion) as numero_devoluciones,
+-- RATIO DE CONVERSION 
+count(orden)*10000/sum(gente_ingresada) as ratio_de_conversion
+from obt
+
+
+
 
