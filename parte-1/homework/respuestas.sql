@@ -503,6 +503,83 @@ Cual es la diferencia entre INNER JOIN y LEFT JOIN. (podes usar la tabla anterio
 Respuesta: LEFT trae registros encontrados y no encontrados en la segunda tabla en cambio el INNER solo los comunes a ambas tablas. 
 La cantidad total de registros depende de la relacion 1-1,1-n,n-n siendo el resultado final la multplicacion de ambas.
 
-		
+### CORRECCIONES TP1 ### 
+ -- CLASE 2 
+ --8) 
+/*Sabemos que la tabla inventario esta a nivel tienda, sku, fecha. 
+Si le agregamos (inicial+final)/2 seria el promedio por item, fecha tienda. 
+Si queremos saber el inventario promedio a nivel tienda, por cada fecha (que es lo que pide) 
+no nos queda otra que hacer el promedio del promedio, en este caos AVG((inicial+final)/2 ). Se entendio?
+*/
+select 
+tienda,
+fecha,
+-- (sum(inicial)+sum(final))/2 as promedio --> Anterior
+(avg(inicial)+sum(final))/2 as promedio --> Nueva
+from stg.inventory
+group by tienda, fecha
+order by tienda, fecha
+-- CLASE 3 
+--2)
+/*No esta mal, pero lo correcto seria usar el país y provincia de la tabla store master*/
+select
+pais,provincia,
+sum(venta) ventas, 
+sum(impuestos) impuestos
+from stg.order_line_sale ols 
+left join stg.store_master sm on sm.codigo_tienda=ols.tienda
+group by pais, provincia
+--6)
+/*El inventario promedio se calcula asi: AVG(inicial+final)/2 as inventario_promedio
+EL mes esta ok tenes que agregarlo al group by, mes—> extract(month from i.fecha) as mes*/
+select 
+extract(month from i.fecha) as mes,
+sm.codigo_tienda,
+sm.nombre, 
+i.sku,
+coalesce(round((avg(inicial)+sum(final))/2,0),0) as inventario_prom_mes
+from stg.store_master sm
+left join stg.inventory i on i.tienda = sm.codigo_tienda
+group by sm.nombre,i.sku, sm.codigo_tienda, extract(month from i.fecha)
+--7)
+/*Te falto hacer el cte. 
+Otra opción puede ser meter todo el case statement en el group by pero es mas feo.*/
+with cte as (
+select codigo_producto,
+case when lower(pm.material) is null then 'Unknown' else lower(pm.material) end as material_normalizado
+from stg.product_master pm
+)
 
+select 
+material_normalizado,
+sum(cantidad) as vta_cant_material
+from stg.order_line_sale ols 
+left join cte on cte.codigo_producto = ols.producto
+group by material_normalizado
 
+--8)
+/*Esta ok. No uses el round si el resultado se puede seguir usando mas adelante en otras querys, solo Usalo para mostrar algo que quede mas legible.*/
+select 
+ols.*,
+case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0
+	end as cotizacion,
+ols.venta/(case 
+	when moneda = 'EUR' then mfx.cotizacion_usd_eur
+	when moneda = 'ARS' then mfx.cotizacion_usd_peso
+	when moneda = 'URU' then mfx.cotizacion_usd_uru
+	else 0 end) as vta_bruta_dolarizada
+from stg.order_line_sale ols 
+left join stg.monthly_average_fx_rate mfx on extract(month from mfx.mes) = extract(month from ols.fecha) 
+
+--11)
+/*No apliques distinct con group by. EL group by es suficiente. Hay que contar productos, subcategoria y orden son parte del group by*/
+select 
+subcategoria,
+count(subsubcategoria) as cant_items
+from stg.order_line_sale ols 
+left join stg.product_master pm on pm.codigo_producto = ols.producto
+group by subcategoria
