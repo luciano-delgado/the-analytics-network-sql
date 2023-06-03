@@ -548,7 +548,7 @@ concat('Q',
 	   as fiscal_quarter;
 $$ language sql
 ;
---> ARMADO DE OBT "SINGLE SOURCE TRUTH"
+--> ARMADO DE OBT "SINGLE SOURCE TRUTH" (usé tablas que tenía de back up ya que las originales hice TRUNCATE por comenzar a trabajar parte-3)
 with cte_ajustes as (
 select 
 	orden,
