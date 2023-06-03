@@ -491,7 +491,6 @@ create table stg.integrador_2 (
 	producto varchar(10),
 	tienda smallint,
 	orden varchar(10),
-	gente_ingresada smallint,
 	cantidad int,
 	tienda_nombre varchar(255)
 	tienda_pais varchar(100),
@@ -508,10 +507,9 @@ create table stg.integrador_2 (
 	descuentos numeric(18,5),
 	creditos numeric(18,5),
 	impuestos numeric(18,5),
-	promedio_inv numeric(18,5),
-	promedio_costo numeric(18,5),
-	cantidad_devolucion numeric(18,5),
-	otros_ingresos bigint,
+	costo_promedio(18,5),
+	ajuste numeric(18,5),
+	devoluciones bigint,
 
 );
 -- GENERO QUERY CON DATOS A INSERTAR -- 
@@ -553,13 +551,21 @@ $$ language sql
 --> ARMADO DE OBT "SINGLE SOURCE TRUTH"
 with cte_ajustes as (
 select 
+	orden,
 	producto as producto_cte,
-	200/(select sum(cantidad) from stg.order_line_sale ols left join stg.product_master pm on pm.codigo_producto = ols.producto
-	where lower(pm.nombre) like ('%philips%')) 
-		as otros_ingresos
-	from stg.order_line_sale ols
-	left join stg.product_master pm on pm.codigo_producto = ols.producto
-	group by pm.nombre,producto
+	--count(1) over() as adjustment
+	200 / count(1) over() as adjustment
+	from bkp.order_line_sale_20230526 ols
+left join stg.product_master pm on pm.codigo_producto = ols.producto
+where lower(pm.nombre) like '%philips%'
+)
+, stg_returns as (
+select 
+	orden, 
+	item, 
+	min(cantidad) as qty_returned
+from bkp.return_movements_20230526
+group by orden,item
 )
 , obt as (
 select 
@@ -568,8 +574,7 @@ ols.fecha,
 producto, 
 ols.tienda, 
 ols.orden, -- nro orden
-spc.conteo as gente_ingresada, -- gente que ingresó ese dia
-ols.cantidad, -- cantidad vendida
+ols.cantidad, 
 sm.nombre,sm.pais, sm.provincia, -- tienda
 pm.categoria, pm.subcategoria, pm.subsubcategoria, -- sku
 extract(day from ols.fecha) as dia, -- Dia
@@ -577,55 +582,33 @@ extract(month from ols.fecha) as mes, -- Mes
 extract(year from ols.fecha) as anio, -- Año
 stg.fiscal_quarter(ols.fecha) as fq, -- FQ
 stg.fiscal_year(ols.fecha) as fy, -- FY
--- Importes 
 stg.convert_usd(ols.moneda, ols.venta, ols.fecha) as ventas, 
 stg.convert_usd(ols.moneda, ols.descuento, ols.fecha) as descuentos, 
 stg.convert_usd(ols.moneda, ols.creditos, ols.fecha) as creditos,
 stg.convert_usd(ols.moneda, ols.impuestos, ols.fecha) as impuestos, 
--- Inventario promedio 
-coalesce(round((i.inicial+i.final)/2, 2),0) as promedio_inv, -- por item (Nivel de Ag: item, tienda, fecha)
--- Costo inventario
-c1.costo_promedio_usd as promedio_costo,
--- Devoluciones
-coalesce((select sum(unidades) from stg.vw_return_movements rm2 where rm2.orden = ols.orden and rm2.item = ols.producto),0) as cantidad_devolucion,
--- Prorateo TV mail
-coalesce(case when lower(pm.nombre) like ('%philips%') then otros_ingresos end,0) as otros_ingresos
-FROM stg.order_line_sale ols
-left join stg.store_master sm on sm.codigo_tienda = ols.tienda
-left join stg.super_store_count spc on spc.tienda = ols.tienda and cast(spc.fecha as date) = ols.fecha
+ols.cantidad * c1.costo_promedio_usd as costo_promedio,
+aj.adjustment as adjustment_usd,
+rm.qty_returned
+FROM bkp.order_line_sale_20230526 ols
+left join bkp.store_master_20230526 sm on sm.codigo_tienda = ols.tienda
 left join stg.product_master pm on pm.codigo_producto = ols.producto
-left join stg.inventory i on i.sku = ols.producto and i.tienda = ols.tienda and i.fecha = ols.fecha
-left join stg.cost c1 on c1.codigo_producto = ols.producto
-left join stg.vw_return_movements rm on rm.orden = ols.orden and rm.item = ols.producto 
-left join cte_ajustes aj on True and aj.producto_cte = ols.producto -- #On True
-left join stg.suppliers sp on sp.codigo_producto = ols.producto 
-where sp.is_primary is true 
+left join bkp.cost_bkp_20230402 c1 on c1.codigo_producto = ols.producto
+left join stg_returns rm on (rm.orden = ols.orden and rm.item = ols.producto) 
+left join cte_ajustes aj on (aj.producto_cte = ols.producto and ols.orden = aj.orden)
+left join bkp.suppliers_20230526 sp on sp.codigo_producto = ols.producto where sp.is_primary is true 
 )
-
---> METRICAS
-select   -- * from obt
-sum(ventas),
-sum(descuentos),
-sum(creditos),
-sum(impuestos),
-sum(ventas) - sum(descuentos) as ventas_netas,
+select 
+sum(cantidad) qty, 
+sum(ventas) as ventas,
+sum(ventas) + sum(descuentos) as ventas_netas,
 sum(ventas) - sum(descuentos) - sum(creditos) - sum(impuestos) as valor_final_pagado,
---ROI
-sum(ventas)/avg(promedio_inv*promedio_costo) as roi,
--- DOH:(hice vtas promedio/inventario promedio)
-(sum(ventas)/(select count (distinct fecha) from obt))/avg(promedio_inv) as doh, 
--- COSTOS 
-sum(promedio_costo*promedio_inv) as costo_inventario,
-sum(promedio_costo*cantidad) as costo_cantidad_vendida,
-sum(promedio_costo*cantidad_devolucion) as cantidad_devuelta,
--- AGM
-sum(ventas) + sum(descuentos) + sum(creditos) - sum(promedio_costo*cantidad) + sum(otros_ingresos) as AGM,
--- NRO DEVOLUCIONES
-sum(cantidad_devolucion) as numero_devoluciones,
--- RATIO DE CONVERSION 
-count(orden)*10000/sum(gente_ingresada) as ratio_de_conversion
-from obt
-
-
+sum(ventas) + sum(descuentos) - sum(costo_promedio) as gross_margin,
+sum(ventas) + sum(descuentos) - sum(costo_promedio) + sum(adjustment_usd) as gross_margin_adjusted,
+-- DOH = Unidades en Inventario Promedio / Promedio diario Unidades vendidas ultimos 7 dias.
+sum(ventas)/((sum(i.inicial+i.final)/2)*avg(costo_promedio)) as roi,
+sum(ventas)/count(distinct orden) as aov,
+sum(qty_returned) as qty_returned
+from obt 
+left join bkp.inventory_20230526 i on (i.sku = obt.producto and i.tienda = obt.tienda and i.fecha = obt.fecha)
 
 
