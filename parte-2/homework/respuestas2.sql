@@ -486,32 +486,33 @@ from cte4
 -- |INTEGRADOR 2| -- 26/5/2023
 
 -- CREO LA TABLA -- 
-create table stg.integrador_2 (
+create table stg.integrador_2_final (
 	fecha date,
 	producto varchar(10),
 	tienda smallint,
 	orden varchar(10),
 	cantidad int,
-	tienda_nombre varchar(255)
-	tienda_pais varchar(100),
-	tienda_prov varchar(100),
+	nombre varchar(255),
+	pais varchar(100),
+	provincia varchar(100),
 	categoria varchar(255),
 	subcategoria varchar(255),
 	subsubcategoria varchar(255),
 	dia numeric,
-	mes numeric
+	mes numeric,
 	anio numeric,
-	anio_fiscal_texto text,
-	q_fiscal text,
-	ventas numeric(18,5),
-	descuentos numeric(18,5),
-	creditos numeric(18,5),
-	impuestos numeric(18,5),
-	costo_promedio(18,5),
-	ajuste numeric(18,5),
-	devoluciones bigint,
+	fq text,
+	fy text,
+	ventas numeric,
+	descuentos numeric,
+	creditos numeric,
+	impuestos numeric,
+	costo_promedio numeric,
+	adjustment_usd numeric,
+	qty_returned int
+	);
 
-);
+
 -- GENERO QUERY CON DATOS A INSERTAR -- 
 --> FUNCION CONVERTIR USD
 create function stg.convert_usd(moneda varchar(3),valor decimal(18,5), fecha date) returns decimal(18,5) 
@@ -555,7 +556,7 @@ select
 	producto as producto_cte,
 	--count(1) over() as adjustment
 	200 / count(1) over() as adjustment
-	from bkp.order_line_sale_20230526 ols
+	from stg.order_line_sale ols
 left join stg.product_master pm on pm.codigo_producto = ols.producto
 where lower(pm.nombre) like '%philips%'
 )
@@ -564,7 +565,7 @@ select
 	orden, 
 	item, 
 	min(cantidad) as qty_returned
-from bkp.return_movements_20230526
+from stg.return_movements
 group by orden,item
 )
 , obt as (
@@ -573,10 +574,14 @@ select
 ols.fecha, 
 producto, 
 ols.tienda, 
-ols.orden, -- nro orden
+ols.orden, 
 ols.cantidad, 
-sm.nombre,sm.pais, sm.provincia, -- tienda
-pm.categoria, pm.subcategoria, pm.subsubcategoria, -- sku
+sm.nombre,
+sm.pais,
+sm.provincia, 
+pm.categoria, 
+pm.subcategoria, 
+pm.subsubcategoria, 
 extract(day from ols.fecha) as dia, -- Dia
 extract(month from ols.fecha) as mes, -- Mes
 extract(year from ols.fecha) as anio, -- Año
@@ -586,17 +591,22 @@ stg.convert_usd(ols.moneda, ols.venta, ols.fecha) as ventas,
 stg.convert_usd(ols.moneda, ols.descuento, ols.fecha) as descuentos, 
 stg.convert_usd(ols.moneda, ols.creditos, ols.fecha) as creditos,
 stg.convert_usd(ols.moneda, ols.impuestos, ols.fecha) as impuestos, 
-ols.cantidad * c1.costo_promedio_usd as costo_promedio,
-aj.adjustment as adjustment_usd,
+cast(ols.cantidad * c1.costo_promedio_usd as numeric) as costo_promedio,
+cast(aj.adjustment as int) as adjustment_usd,
 rm.qty_returned
-FROM bkp.order_line_sale_20230526 ols
-left join bkp.store_master_20230526 sm on sm.codigo_tienda = ols.tienda
+FROM stg.order_line_sale ols
+left join stg.store_master sm on sm.codigo_tienda = ols.tienda
 left join stg.product_master pm on pm.codigo_producto = ols.producto
-left join bkp.cost_bkp_20230402 c1 on c1.codigo_producto = ols.producto
+left join stg.cost c1 on c1.codigo_producto = ols.producto
 left join stg_returns rm on (rm.orden = ols.orden and rm.item = ols.producto) 
 left join cte_ajustes aj on (aj.producto_cte = ols.producto and ols.orden = aj.orden)
-left join bkp.suppliers_20230526 sp on sp.codigo_producto = ols.producto where sp.is_primary is true 
+left join stg.suppliers sp on sp.codigo_producto = ols.producto where sp.is_primary is true 
 )
+-- Inserto datos en tabla final 
+insert into stg.integrador_2_final
+select * from obt
+
+-- Calculo Metricas 
 select 
 sum(cantidad) qty, 
 sum(ventas) as ventas,
@@ -604,11 +614,9 @@ sum(ventas) + sum(descuentos) as ventas_netas,
 sum(ventas) - sum(descuentos) - sum(creditos) - sum(impuestos) as valor_final_pagado,
 sum(ventas) + sum(descuentos) - sum(costo_promedio) as gross_margin,
 sum(ventas) + sum(descuentos) - sum(costo_promedio) + sum(adjustment_usd) as gross_margin_adjusted,
--- DOH = Unidades en Inventario Promedio / Promedio diario Unidades vendidas ultimos 7 dias.
+-- DOH = Unidades en Inventario Promedio / Promedio diario Unidades vendidas ultimos 7 dias.(WIP)
 sum(ventas)/((sum(i.inicial+i.final)/2)*avg(costo_promedio)) as roi,
 sum(ventas)/count(distinct orden) as aov,
-sum(qty_returned) as qty_returned
-from obt 
+sum(qty_returned) as qty_returned -- M999000006: p200010 tuvo devolucion sin venta por eso qty_returned=3
+from stg.integrador_2_final 
 left join bkp.inventory_20230526 i on (i.sku = obt.producto and i.tienda = obt.tienda and i.fecha = obt.fecha)
-
-
