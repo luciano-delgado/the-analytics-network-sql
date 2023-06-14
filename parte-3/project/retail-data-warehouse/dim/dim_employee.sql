@@ -1,6 +1,6 @@
 
 CREATE TABLE dim.employees (
-    id PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     nombre varchar(255),
     apellido varchar(255),
     fecha_entrada date,
