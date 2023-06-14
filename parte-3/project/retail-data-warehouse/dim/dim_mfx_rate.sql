@@ -11,3 +11,4 @@ CREATE TABLE dim.monthly_average_fx_rate
                             , cotizacion_usd_eur DECIMAL
                             , cotizacion_usd_uru  DECIMAL
                  );
+ 
