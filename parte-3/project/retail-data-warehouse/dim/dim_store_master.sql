@@ -1,7 +1,7 @@
 
 CREATE TABLE dim.store_master
                  (
-                              codigo_tienda  SMALLINT
+                              codigo_tienda  SMALLINT PRIMARY KEY
                             , pais           VARCHAR(100)
                             , provincia      VARCHAR(100)
                             , ciudad         VARCHAR(100)
