@@ -6,3 +6,4 @@ CREATE TABLE dim.suppliers(
 	nombre varchar(255),
 	is_primary boolean
 );
+ 
