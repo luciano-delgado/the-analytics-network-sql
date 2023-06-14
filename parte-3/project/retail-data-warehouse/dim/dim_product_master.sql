@@ -1,5 +1,5 @@
 
-
+ 
 -- Tabla: dim.product_master
 CREATE TABLE dim.product_master
                  (
