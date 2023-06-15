@@ -16,7 +16,10 @@ CREATE TABLE dim.product_master
                             , has_bluetooth   boolean
                             , talle           VARCHAR(255)
                  );
-		 
+ALTER TABLE dim.product_master
+ADD CONSTRAINT pk_codigo_producto PRIMARY KEY (codigo_producto);
+
+### TABLA COST ####
 		 
 /*Intento 1: Me dio error "ERROR:  no hay restricción unique que coincida con las columnas dadas en la tabla referida «product_master»"
 Entonces agrego la restricción de UNIQUE con ayuda del ALTER TABLE*/
