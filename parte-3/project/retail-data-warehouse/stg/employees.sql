@@ -1,5 +1,5 @@
 CREATE TABLE stg.employees (
-    id serial PRIMARY KEY,
+    -- id serial PRIMARY KEY, => En STG no van con CONSTRAINTS!
     nombre varchar(255),
     apellido varchar(255),
     fecha_entrada date,
