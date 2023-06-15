@@ -1,7 +1,8 @@
-
+DROP TABLE IF EXISTS fct.order_line_sale;
 CREATE TABLE fct.order_line_sale
                  (
-                              orden      VARCHAR(10)
+					auto_id SERIAL PRIMARY KEY 
+                            , orden      VARCHAR(10)
                             , producto   VARCHAR(10)
                             , tienda     SMALLINT
                             , fecha      date
@@ -13,4 +14,6 @@ CREATE TABLE fct.order_line_sale
                             , moneda     varchar(3)
                             , pos        SMALLINT
                             , is_walkout BOOLEAN
-                 );
+					         , CONSTRAINT fk_producto FOREIGN KEY (producto) REFERENCES dim.product_master(codigo_producto)
+                 	 , CONSTRAINT fk_tienda FOREIGN KEY (tienda) REFERENCES dim.store_master(codigo_tienda)
+				 );	
