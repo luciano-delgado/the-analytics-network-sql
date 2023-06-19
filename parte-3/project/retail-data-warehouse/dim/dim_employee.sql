@@ -12,3 +12,11 @@ CREATE TABLE dim.employees (
     posicion varchar(255)
 )
 ;
+# Aplico SDC y actualizo el valor según si el empleado está activo # 
+ALTER TABLE dim.employees
+ADD COLUMN is active;
+UPDATE dim.employees
+SET is_active = CASE
+                   WHEN fecha_salida IS NULL THEN false
+                   ELSE true
+               END;
