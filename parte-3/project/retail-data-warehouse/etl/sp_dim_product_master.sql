@@ -3,7 +3,7 @@ language plpgsql as $$
 DECLARE
   usuario varchar(10) := current_user ;
 BEGIN
-  usuario := current_user;
+  usuario := current_user; 
   with cte as (
   select *,
 	    CASE 
