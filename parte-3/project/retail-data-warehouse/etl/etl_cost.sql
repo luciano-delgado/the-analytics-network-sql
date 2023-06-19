@@ -1,7 +1,7 @@
 /*CREACION DEL SP (EL CUAL SE ALMACENA EN ETL) QUE TOMARÁ LOS DATOS DEL STG Y LLENARÁ DIM 
 Agregado: Se agrega call.log() al final para que deje registro de fecha, tabla modificada y usuario
 */
-create or replace procedure etl.dim_cost()
+create or replace procedure etl.sp_dim_cost()
 language plpgsql as $$
 DECLARE
   usuario varchar(10) := current_user ;
