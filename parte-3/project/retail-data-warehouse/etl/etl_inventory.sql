@@ -1,1 +1,10 @@
-/*EN ESTE CASO SE INSERTAN NUEVOS REGISTROS NO SE ACTUALIZAN*/
+create or replace procedure etl.inventory()
+language sql 
+as $$ 
+truncate fct.inventory;
+insert into fct.inventory 
+select * from stg.inventory
+$$
+;
+-- call etl.inventory()
+
