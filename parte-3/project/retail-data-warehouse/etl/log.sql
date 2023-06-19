@@ -1,5 +1,5 @@
 /*CREO TABLA DE LOGS*/
-CREATE OR REPLACE TABLE etl.log
+CREATE OR REPLACE TABLE etl.sp_log
                  (
                               fecha date
                             , tabla          VARCHAR(255)
