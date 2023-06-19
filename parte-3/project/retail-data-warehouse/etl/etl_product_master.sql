@@ -21,7 +21,7 @@ SELECT * from cte
   on conflict (codigo_producto)
   do update set
 	marca = excluded.marca;
-	call etl.log(current_date,'dim.product_master' ,usuario);
+	call etl.sp_log(current_date,'dim.product_master' ,usuario);
 END;$$;
 call etl.dim_product_master() 
 select * from etl.log
