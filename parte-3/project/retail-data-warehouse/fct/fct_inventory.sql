@@ -1,8 +1,8 @@
 DROP TABLE IF EXISTS fct.inventory;
 CREATE TABLE fct.inventory
                  (
-					 auto_id SERIAL PRIMARY KEY,
-                     tienda  SMALLINT,
+					 
+                    			 tienda  SMALLINT,
 					 sku     VARCHAR(10),
 					 fecha   DATE,
 					 inicial SMALLINT,
