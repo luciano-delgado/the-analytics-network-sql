@@ -1,4 +1,4 @@
-create or replace procedure etl.dim_product_master()
+create or replace procedure etl.sp_dim_product_master()
 language plpgsql as $$
 DECLARE
   usuario varchar(10) := current_user ;
