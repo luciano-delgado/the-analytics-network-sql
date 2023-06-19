@@ -3,7 +3,7 @@ language sql
 as $$ 
 truncate fct.inventory;
 insert into fct.inventory 
-select * from stg.inventory
+select * from stg.inventory 
 $$
 ;
 -- call etl.inventory()
