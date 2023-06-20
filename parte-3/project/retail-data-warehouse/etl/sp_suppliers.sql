@@ -1,4 +1,4 @@
-create or replace procedure etl.suppliers()
+create or replace procedure etl.sp_suppliers()
 language sql 
 as $$ 
 truncate dim.suppliers;
