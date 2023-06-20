@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS fct.order_line_sale;
 CREATE TABLE fct.order_line_sale
                  (
-					auto_id SERIAL PRIMARY KEY 
+			      auto_id SERIAL PRIMARY KEY 
                             , orden      VARCHAR(10)
                             , producto   VARCHAR(10)
                             , tienda     SMALLINT
