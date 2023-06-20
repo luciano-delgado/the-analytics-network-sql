@@ -12,13 +12,5 @@ CREATE TABLE dim.employees (
     posicion varchar(255)
 )
 ;
--- Altero tabla para que soporte SDC
-ALTER TABLE dim.employees
-ADD COLUMN is_active bool, duration int
-update dim.employees 
-set duration = case when fecha_salida is null then null else cast(extract(month from fecha_salida) as int)-cast(extract(month from fecha_entrada) as int) end
-;
-update dim.employees 
-set is_active = case when fecha_salida is null true else false end
-;
-select * from dim.employees
+
+
