@@ -1,4 +1,4 @@
-create or replace procedure etl.inventory()
+create or replace procedure etl.sp_inventory()
 language sql 
 as $$ 
 truncate fct.inventory;
