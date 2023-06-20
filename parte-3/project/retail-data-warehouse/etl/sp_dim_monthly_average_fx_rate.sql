@@ -1,4 +1,4 @@
-create or replace procedure etl.monthly_average_fx_rate()
+create or replace procedure etl.sp_monthly_average_fx_rate()
 language sql 
 as $$ 
 truncate dim.monthly_average_fx_rate;
