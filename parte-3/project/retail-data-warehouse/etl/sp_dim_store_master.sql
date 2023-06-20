@@ -1,4 +1,4 @@
-create or replace procedure etl.store_master()
+create or replace procedure etl.sp_store_master()
 language sql 
 as $$ 
 truncate dim.store_master;
