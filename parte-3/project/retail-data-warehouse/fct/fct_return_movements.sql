@@ -3,7 +3,7 @@
 DROP TABLE IF EXISTS fct.return_movements; 
 CREATE TABLE fct.return_movements
                  (
-				auto_id SERIAL PRIMARY KEY
+				  auto_id SERIAL PRIMARY KEY
 				, orden      	VARCHAR(10)
 				, envio   		VARCHAR(10)
 				, item 	        VARCHAR(10)
