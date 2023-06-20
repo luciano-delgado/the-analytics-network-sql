@@ -3,8 +3,18 @@ language sql
 as $$ 
 truncate dim.employees;
 insert into dim.employees 
-select nombre, apellido, fecha_entrada, fecha_salida, telefono, pais, provincia, codigo_tienda, posicion,
-case when fecha_salida is null then true else false end
+select 
+  nombre, 
+  apellido, 
+  fecha_entrada, 
+  fecha_salida, 
+  telefono, 
+  pais, 
+  provincia, 
+  codigo_tienda, 
+  posicion,
+case when fecha_salida is null then true else false end, -- is_active
+case when fecha_salida is null then null else cast(extract(month from fecha_salida) as int)-cast(extract(month from fecha_entrada) as int) end -- duration
 from stg.employees
 call etl.sp_log(current_date,'dim.employees' ,'luciano');
 $$ 
