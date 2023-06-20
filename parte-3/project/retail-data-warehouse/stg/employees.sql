@@ -14,5 +14,5 @@ CREATE TABLE dim.employees (
 ;
 -- Altero tabla para que soporte SDC
 ALTER TABLE dim.employees
-ADD COLUMN is_active bool
+ADD COLUMN is_active bool, duration int
 select * from dim.employees
