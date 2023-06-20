@@ -8,3 +8,4 @@ Se usan más que nada PK (pudiendo haber FK por ejemplo entre tabla cost y produ
 
 - Subrogate Key en tabla dim.employees como PK (concat + hash + (nombre,apellido))
 - UPSERT en etl.sp_employees y dim.cost
+- Se incluye un SP que haga back up de todas las tablas en el schema bkp
