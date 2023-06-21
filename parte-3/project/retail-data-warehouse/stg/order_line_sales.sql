@@ -1,4 +1,4 @@
-CREATE TABLE stg.order_line_sale
+CREATE TABLE stg.order_line_sales
                  (
                               orden      VARCHAR(10)
                             , producto   VARCHAR(10)
