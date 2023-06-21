@@ -1,4 +1,4 @@
-CREATE TABLE stg.store_master
+CREATE TABLE stg.store_master 
                  (
                               codigo_tienda  SMALLINT
                             , pais           VARCHAR(100)
