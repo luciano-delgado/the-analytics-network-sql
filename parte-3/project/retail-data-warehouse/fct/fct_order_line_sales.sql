@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS fct.order_line_sale;
-CREATE TABLE fct.order_line_sale
+DROP TABLE IF EXISTS fct.order_line_sales;
+CREATE TABLE fct.order_line_sales
                  (
 			      auto_id SERIAL PRIMARY KEY 
                             , orden      VARCHAR(10)
