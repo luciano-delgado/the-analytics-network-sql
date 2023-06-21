@@ -1,6 +1,6 @@
 CREATE TABLE stg.inventory
                  (
-                              tienda  SMALLINT
+                              tienda  SMALLINT 
                             , sku     VARCHAR(10)
                             , fecha   DATE
                             , inicial SMALLINT
