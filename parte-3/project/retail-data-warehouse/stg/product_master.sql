@@ -1,4 +1,4 @@
-CREATE TABLE stg.product_master
+ CREATE TABLE stg.product_master
                  (
                               codigo_producto VARCHAR(255)
                             , nombre          VARCHAR(255)
