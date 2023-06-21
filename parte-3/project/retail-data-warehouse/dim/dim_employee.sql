@@ -10,6 +10,7 @@ CREATE TABLE dim.employees (
     provincia varchar(255),
     codigo_tienda varchar(255),
     posicion varchar(255),
+    duration int,
     hashtext(concat(nombre,apellido)) varchar(255) PRIMARY KEY--> Creo una SUBROGATE KEY 
 )
 ;
