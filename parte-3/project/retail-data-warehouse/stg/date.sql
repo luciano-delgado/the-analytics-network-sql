@@ -1,7 +1,7 @@
 CREATE TABLE stg.date (
 	fecha_ts timestamp,
     fecha DATE PRIMARY KEY,
-    mes INTEGER,
+    mes INTEGER, 
     anio INTEGER,
     dia_semana TEXT,
     is_weekend BOOLEAN,
