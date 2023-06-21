@@ -1,4 +1,4 @@
-CREATE TABLE stg.monthly_average_fx_rate
+CREATE TABLE stg.monthly_average_fx_rate 
                  (
                               mes                 DATE
                             , cotizacion_usd_peso DECIMAL
