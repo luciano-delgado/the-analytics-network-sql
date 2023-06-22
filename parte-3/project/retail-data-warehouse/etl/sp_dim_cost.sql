@@ -5,7 +5,7 @@ create or replace procedure etl.sp_dim_cost()
 language plpgsql as $$
 DECLARE
   usuario varchar(10) := current_user ;
-  count_validacion INT;
+  
 BEGIN
   usuario := current_user;
 -- buscar codigo de producto existente en product_master y traer solo los que existen -> insert basado en la nueva tabla/cte con los codigos que existen unicamente
@@ -24,8 +24,8 @@ select c1.codigo_producto, c1.costo_promedio_usd
 from stg.cost c1
 inner join stg.product_master pm on pm.codigo_producto = c1.codigo_producto
 )
-	SELECT COUNT(1) INTO count_validacion FROM validacion;
-	call etl.log(current_date,'dim.cost' ,usuario,'sp_dim_cost',count_validacion);
+	
+	call etl.log(current_date,'dim.cost' ,usuario);
 END;
 $$;
 
