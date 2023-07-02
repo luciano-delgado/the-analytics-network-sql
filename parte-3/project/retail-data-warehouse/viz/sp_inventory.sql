@@ -1,5 +1,5 @@
 -- TP3-5.2- SP inventory
-create or replace procedure viz.inventory()
+create or replace procedure viz.sp_inventory()
 language sql as $$ 
 truncate viz.inventory
 ;
@@ -35,5 +35,5 @@ call etl.sp_log(current_date,'viz.inventory' ,'luciano')
 ;
 $$
 ;
--- call viz.inventory()
+-- call viz.sp_inventory()
 -- select * from viz.inventory
