@@ -8,7 +8,7 @@ coalesce(round(valor/(case
 	when moneda = 'ARS' then mfx.cotizacion_usd_peso
 	when moneda = 'URU' then mfx.cotizacion_usd_uru
 	else 0 end),2),0) as valor_usd
-from stg.monthly_average_fx_rate mfx 
+from dim.monthly_average_fx_rate mfx 
 where extract(month from mfx.mes) = extract(month from fecha)
 ;
 
@@ -46,7 +46,7 @@ select
   sm.ciudad,
   sm.nombre as nombre_tienda,
   sm.fecha_apertura
-from bkp.order_line_sale_20230526 ols
+from fct.order_line_sale ols
   inner join (select * from stg.return_movements rm1 where rm1.desde = 'Cliente' ) rm on rm.orden = ols.orden  
-  left  join stg.store_master sm on sm.codigo_tienda = ols.tienda
-  left join stg.product_master pm on pm.codigo_producto = ols.producto
+  left  join fct.store_master sm on sm.codigo_tienda = ols.tienda
+  left join fct.product_master pm on pm.codigo_producto = ols.producto
