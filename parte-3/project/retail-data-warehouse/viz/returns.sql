@@ -47,6 +47,6 @@ select
   sm.nombre as nombre_tienda,
   sm.fecha_apertura
 from bkp.order_line_sale_20230526 ols
-  inner join (select * from bkp.return_movements_20230526 rm1 where rm1.desde = 'Cliente' ) rm on rm.orden = ols.orden  
-  left  join bkp.store_master_20230526 sm on sm.codigo_tienda = ols.tienda
-  left join bkp.product_master_20230526 pm on pm.codigo_producto = ols.producto
+  inner join (select * from stg.return_movements rm1 where rm1.desde = 'Cliente' ) rm on rm.orden = ols.orden  
+  left  join stg.store_master sm on sm.codigo_tienda = ols.tienda
+  left join stg.product_master pm on pm.codigo_producto = ols.producto
