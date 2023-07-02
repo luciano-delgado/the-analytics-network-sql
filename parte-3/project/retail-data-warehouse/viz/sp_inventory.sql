@@ -5,7 +5,7 @@ truncate viz.inventory
 ;
 insert into viz.inventory
 with cte1 as (
-  select * from bkp.inventory_20230526
+  select * from stg.intentory
   union all
   select * from fct.inventory
   order by tienda, sku, fecha
