@@ -43,5 +43,5 @@ select
   sm.provincia as t_prov, 
   sm.ciudad as t_ciudad
 from cte2
-  left join bkp.store_master_20230526 sm on sm.codigo_tienda = cte2.tienda
-  left join bkp.cost c1 on c1.codigo_producto = cte2.sku
+  left join dim.store_master sm on sm.codigo_tienda = cte2.tienda
+  left join dim.cost c1 on c1.codigo_producto = cte2.sku
