@@ -18,7 +18,7 @@ create table viz.inventory (
 insert into viz.inventory
 with cte1 as (
 	-- # Inventario oct, nov y dic.
-  select * from bkp.inventory_20230526
+  select * from stg.inventory
   union all
   select * from fct.inventory
   order by tienda, sku, fecha
