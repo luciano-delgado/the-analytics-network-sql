@@ -1,5 +1,4 @@
---  Creo tabla empleados
-DROP TABLE IF EXISTS stg.employees;
+-- Creo tabla empleados DROP TABLE IF EXISTS stg.employees;
 CREATE TABLE stg.employees (
     nombre varchar(255),
     apellido varchar(255),
@@ -10,7 +9,4 @@ CREATE TABLE stg.employees (
     provincia varchar(255),
     codigo_tienda varchar(255),
     posicion varchar(255)
-)
-;
-
-
+);

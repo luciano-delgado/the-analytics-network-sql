@@ -11,7 +11,16 @@ CREATE TABLE dim.employees (
     codigo_tienda varchar(255),
     posicion varchar(255),
     duration int,
-    hashtext(concat(nombre,apellido)) varchar(255) PRIMARY KEY--> Creo una SUBROGATE KEY 
-)
+    hashtext(concat(nombre, apellido)) varchar(255) PRIMARY KEY --> Creo una SUBROGATE KEY 
+);
+-- Hago nombre y apellido UNIQUE para concatenarlos + hashearlos + hacerlos PK (SUBROGATE KEY)
+ALTER TABLE dim.employees
+ADD CONSTRAINT nombre_apellido_unique UNIQUE (nombre, apellido);
 ;
-
+-- Esquema SCD
+ALTER TABLE dim.employees
+ADD COLUMN is_active BOOLEAN;
+;
+ALTER TABLE dim.employees
+ADD COLUMN duration int;
+;

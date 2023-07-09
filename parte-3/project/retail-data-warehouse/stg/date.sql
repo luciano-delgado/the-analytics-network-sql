@@ -1,7 +1,7 @@
 CREATE TABLE stg.date (
-	fecha_ts timestamp,
+    fecha_ts timestamp,
     fecha DATE PRIMARY KEY,
-    mes INTEGER, 
+    mes INTEGER,
     anio INTEGER,
     dia_semana TEXT,
     is_weekend BOOLEAN,
@@ -10,5 +10,4 @@ CREATE TABLE stg.date (
     anio_fiscal_text TEXT,
     trimestre_fiscal TEXT,
     fecha_anio_anterior DATE
-)
-;
+);

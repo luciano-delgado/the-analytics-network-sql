@@ -2,7 +2,7 @@ CREATE DATABASE dev;
 -- ## Creo  las tablas
 --CREATE DATABASE ceroamessi;
 -- Crear schema stg
-CREATE SCHEMA IF NOT EXISTS stg;
+CREATE SCHEMA IF NOT EXISTS;
 /* Crear tabla products
  Maestro de productos que posee la empresa. 
  is_active indica que productos estan actualmente a la venta
