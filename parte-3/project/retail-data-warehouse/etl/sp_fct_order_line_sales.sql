@@ -26,6 +26,4 @@ where
 
 call etl.sp_log(current_date, 'fct.order_line_sales', 'luciano');
 
-$ $;
-
-call etl.sp_order_line_sales()
+$$;
