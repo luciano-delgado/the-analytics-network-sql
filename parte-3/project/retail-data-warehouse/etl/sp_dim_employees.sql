@@ -57,6 +57,3 @@ call etl.sp_log(current_date, 'dim.employees', 'luciano');
 
 $ $;
 
--- call etl.sp_employees()
--- select *
--- from dim.employees
