@@ -66,5 +66,3 @@ from
     stg.employees;
 
 $ $;
-
--- call etl.sp_backup()
