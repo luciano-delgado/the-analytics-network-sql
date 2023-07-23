@@ -22,8 +22,5 @@ SELECT * from cte
   do update set
 	marca = excluded.marca;
 	call etl.sp_log(current_date,'dim.product_master' ,usuario);
-END;$$;
-call etl.dim_product_master() 
-select * from etl.log
-select * from dim.product_master
-select * from stg.product_master
+END;
+$$;
