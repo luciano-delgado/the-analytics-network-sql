@@ -14,9 +14,3 @@ call etl.sp_log(current_date, 'dim.suppliers', 'luciano');
 
 $ $;
 
-call etl.suppliers();
-
-select
-    *
-from
-    dim.suppliers
