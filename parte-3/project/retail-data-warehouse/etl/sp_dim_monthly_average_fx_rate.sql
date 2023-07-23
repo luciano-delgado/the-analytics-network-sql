@@ -7,6 +7,4 @@ select * from stg.monthly_average_fx_rate;
 call etl.sp_log(current_date,'dim.monthly_average_fx_rate' ,'luciano');
 $$ 
 ;
-call  etl.monthly_average_fx_rate()
-;
-select * from dim.monthly_average_fx_rate 
+
