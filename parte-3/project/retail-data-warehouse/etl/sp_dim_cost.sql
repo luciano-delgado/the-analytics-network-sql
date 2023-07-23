@@ -41,5 +41,3 @@ END;
 
 $ $;
 
---call etl.sp_dim_cost()
---select * from etl.sp_log
