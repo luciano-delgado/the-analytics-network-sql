@@ -1,0 +1,9 @@
+orden_venta,envio,item,cantidad,id_movimiento,desde,hasta,recibido_por,fecha
+M999000006,R00001,p200010,1,180,Cliente,Warehouse,,2022-11-05
+M999000006,R00001,p200010,1,181,Warehouse,Productos Obsoletos,,2022-11-05
+M999000030,R00002,p200088,1,182,Cliente,Warehouse,,2022-10-20
+M999000030,R00002,p200088,1,183,Warehouse,Retorno a tienda,,2022-10-20
+M999000041,R00003,p100023,1,184,Cliente,Warehouse,,2022-11-14
+M999000041,R00003,p100023,1,185,Warehouse,Retorno a tienda,,2022-11-15
+M999000060,R00004,p200034,1,186,Cliente,Warehouse,,2022-12-01
+M999000060,R00004,p200034,1,187,Warehouse,Productos Obsoletos,,2022-12-01
