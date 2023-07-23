@@ -7,5 +7,3 @@ select * from stg.market_count;
 call etl.sp_log(current_date,'fct.market_count' ,'luciano');
 $$ 
 ;
-call etl.sp_market_count()
-;
