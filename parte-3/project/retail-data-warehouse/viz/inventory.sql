@@ -25,11 +25,22 @@ with cte1 as (
 )
 , cte2 as(
 	-- # Agrego el promedio por tienda, sku, fecha
-  select *,
+	-- # 23/7: Agrego corrección indicada por Agus el 16/7
+  select 
+	tienda,
+	sku,
+	fecha,
+	inicial,
+	final,
   sum(inicial+final)/2 as inv_prom
   from cte1  
   -- where sku  = 'p300001' 
-  group by 1,2,3,4,5
+  group by 
+	tienda,
+	sku,
+	fecha,
+	inicial,
+	final
 	)
 select
   tienda, 
