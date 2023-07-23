@@ -8,5 +8,4 @@ from stg.super_store_count;
 call etl.sp_log(current_date,'fct.super_store_count' ,'luciano');
 $$ 
 ;
-call  etl.sp_super_store_count()
-select * from fct.super_store_count
+
