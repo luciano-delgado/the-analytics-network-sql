@@ -15,4 +15,3 @@ call etl.sp_log (current_date, 'fct.inventory', 'luciano');
 
 $ $;
 
-call etl.inventory ()
