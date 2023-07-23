@@ -12,7 +12,6 @@ call etl.sp_log(current_date, 'dim.store_master', 'luciano');
 
 $ $;
 
-call etl.store_master();
 
 /*
  ERROR:  no se puede truncar una tabla referida en una llave foránea
@@ -46,5 +45,3 @@ set
 call etl.sp_log(current_date, 'dim.store_master', 'luciano');
 
 $ $;
-
-call etl.store_master();
