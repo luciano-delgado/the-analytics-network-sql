@@ -7,5 +7,3 @@ select * from stg.return_movements;
 call etl.sp_log(current_date,'fct.return_movements' ,'luciano');
 $$ 
 ;
-call etl.sp_return_movements()
-;
